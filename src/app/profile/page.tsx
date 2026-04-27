@@ -2,124 +2,213 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Home, Leaf, Sprout, Trees, Flower2, Sun, Activity, Pencil, Apple} from "lucide-react";
-import { FallingLeaves } from "@/components/ui/Fallingleaves";
+import Link from "next/link";
+import {
+  Pencil,
+  MapPin,
+  Sprout,
+  Languages,
+  Phone,
+  ShieldCheck,
+} from "lucide-react";
+
+type Profile = {
+  username?: string;
+  email?: string;
+  role?: "farmer" | "admin";
+  isVerified?: boolean;
+  state?: string;
+  district?: string;
+  village?: string;
+  primaryCrops?: string[];
+  farmSizeAcres?: number;
+  preferredLanguage?: string;
+  phone?: string;
+  lat?: number;
+  lon?: number;
+  profileCompleted?: boolean;
+};
 
 export default function ProfilePage() {
   const router = useRouter();
-  const [user, setUser] = useState<Record<string, unknown> | null>(null);
+  const [user, setUser] = useState<Profile | null>(null);
   const [error, setError] = useState("");
 
   useEffect(() => {
-    const fetchUser = async () => {
-      try {
-        const res = await fetch("/api/users/profile", {
-          method: "GET",
-          credentials: "include",
-        });
-        const data = await res.json();
-        if (!res.ok) throw new Error(data.error || "Failed to fetch profile");
-        setUser(data.data);
-      } catch (err: unknown) {
-        if (err instanceof Error) setError(err.message);
-        else setError("Unknown error");
-      }
+    let cancelled = false;
+    fetch("/api/users/profile", { credentials: "include" })
+      .then(async (r) => {
+        const data = await r.json();
+        if (!r.ok) throw new Error(data.error || "Failed to load profile");
+        return data.data as Profile;
+      })
+      .then((u) => {
+        if (cancelled) return;
+        setUser(u);
+        if (!u.profileCompleted) router.push("/complete-profile");
+      })
+      .catch((e) => !cancelled && setError(e instanceof Error ? e.message : "Error"));
+    return () => {
+      cancelled = true;
     };
-
-    fetchUser();
-  }, []);
-
-  useEffect(() => {
-    if (user && !user.profileCompleted) {
-      router.push("/complete-profile");
-    }
-  }, [user, router]);
+  }, [router]);
 
   if (error) {
-    return <p className="text-red-600 text-center mt-10">{error}</p>;
+    return (
+      <main className="min-h-screen bg-[#fafaf7] flex items-center justify-center">
+        <p className="text-red-700">{error}</p>
+      </main>
+    );
   }
-
   if (!user) {
     return (
-      <div className="min-h-screen bg-gradient-to-b from-green-100 to-amber-50 flex items-center justify-center">
-        <p className="text-center text-green-800 text-lg">Loading your profile...</p>
-      </div>
+      <main className="min-h-screen bg-[#fafaf7] flex items-center justify-center">
+        <p className="text-stone-500">Loading…</p>
+      </main>
     );
   }
 
+  const cropList = user.primaryCrops?.filter(Boolean) ?? [];
+
   return (
-    <div className="min-h-screen bg-gradient-to-b from-green-100 to-amber-50 relative overflow-hidden">
-      <FallingLeaves count={15} />
-      
-      <div className="w-full max-w-3xl mx-auto px-4 py-16 relative z-10">
-        <Card className="w-full bg-white/90 backdrop-blur-sm border border-green-100 shadow-lg rounded-xl overflow-hidden">
-          <div className="bg-green-600 py-2 w-full">
-            <h2 className="text-white text-center text-xl font-semibold mb-8">AgriBloom Profile</h2>
+    <main className="min-h-screen bg-[#fafaf7] py-10 sm:py-16 px-4">
+      <div className="max-w-2xl mx-auto">
+        <div className="flex items-start justify-between gap-4 mb-8">
+          <div>
+            <p className="text-xs uppercase tracking-[0.2em] text-stone-500 mb-2">
+              Your account
+            </p>
+            <h1 className="text-3xl sm:text-4xl font-semibold tracking-tight text-stone-900 mb-1">
+              {user.username}
+            </h1>
+            <p className="text-stone-600 text-sm">{user.email}</p>
           </div>
-          
-          <CardHeader className="pb-0">
-            <div className="flex justify-center -mt-12 mb-4">
-              <div className="rounded-full bg-white p-2 border-4 border-green-300 shadow-md">
-                <div className="w-20 h-20 rounded-full bg-green-100 flex items-center justify-center">
-                  <Leaf size={36} className="text-green-600" />
-                </div>
+          <Link
+            href="/complete-profile"
+            className="flex-shrink-0 inline-flex items-center gap-2 bg-stone-900 hover:bg-stone-800 text-white text-sm font-medium px-4 py-2 rounded-full transition-colors"
+          >
+            <Pencil className="w-3.5 h-3.5" />
+            Edit
+          </Link>
+        </div>
+
+        <div className="bg-white border border-stone-200 rounded-2xl p-6 sm:p-8 space-y-6 shadow-sm">
+          <Section title="Where you farm" icon={<MapPin className="w-4 h-4" />}>
+            <Row label="State" value={user.state || "—"} />
+            <Row label="District" value={user.district || "—"} />
+            <Row label="Village" value={user.village || "—"} />
+            <Row
+              label="Coordinates"
+              value={
+                user.lat && user.lon
+                  ? `${user.lat.toFixed(3)}, ${user.lon.toFixed(3)}`
+                  : "Not shared"
+              }
+            />
+          </Section>
+
+          <Divider />
+
+          <Section title="Crops" icon={<Sprout className="w-4 h-4" />}>
+            {cropList.length > 0 ? (
+              <div className="flex flex-wrap gap-2 pt-1">
+                {cropList.map((c) => (
+                  <span
+                    key={c}
+                    className="bg-green-50 text-green-800 border border-green-200 text-sm px-3 py-1 rounded-full"
+                  >
+                    {c}
+                  </span>
+                ))}
               </div>
-            </div>
-            <CardTitle className="text-green-800 text-2xl font-bold text-center">
-              {String(user.username)}&apos;s Garden
-            </CardTitle>
-          </CardHeader>
+            ) : (
+              <p className="text-stone-500 text-sm">None added yet.</p>
+            )}
+            <Row
+              label="Farm size"
+              value={user.farmSizeAcres ? `${user.farmSizeAcres} acres` : "—"}
+            />
+          </Section>
 
-          <CardContent className="space-y-4 px-6 py-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <ProfileDetail icon={<Sprout className="text-green-600" />} label="Email" value={String(user.email || "")} />
-              <ProfileDetail icon={<Leaf className="text-green-600" />} label="Favorite Vegetable" value={String(user.favoriteVegetable || "")} />
-              <ProfileDetail icon={<Apple className="text-green-600" />} label="Favorite Fruit" value={String(user.favoriteFruit || "")} />
-              <ProfileDetail icon={<Trees className="text-green-600" />} label="Favorite Tree" value={String(user.favoriteTree || "")} />
-              <ProfileDetail icon={<Flower2 className="text-green-600" />} label="Favorite Flower" value={String(user.favoriteFlower || "Not set")}/>
-              <ProfileDetail icon={<Sun className="text-green-600" />} label="Favorite Season" value={String(user.favoriteSeason || "")} />
-              <ProfileDetail icon={<Activity className="text-green-600" />} label="Favorite Activity" value={String(user.favoriteActivity || "")} />
-            </div>
+          <Divider />
 
-            <div className="flex flex-col sm:flex-row justify-between gap-3 pt-6">
-              <Button
-                onClick={() => router.push("/")}
-                variant="outline"
-                className="bg-white text-green-700 border-green-300 hover:bg-green-50 rounded-lg px-4 py-2 flex items-center gap-2"
-              >
-                <Home size={18} />
-                Back to Home
-              </Button>
+          <Section title="Account" icon={<ShieldCheck className="w-4 h-4" />}>
+            <Row label="Role" value={user.role === "admin" ? "Admin" : "Farmer"} />
+            <Row
+              label="Email verified"
+              value={user.isVerified ? "Yes" : "Not yet"}
+              tone={user.isVerified ? "good" : "warn"}
+            />
+            <Row
+              label="Phone"
+              value={user.phone || "—"}
+              icon={<Phone className="w-3.5 h-3.5 text-stone-400" />}
+            />
+            <Row
+              label="Language"
+              value={user.preferredLanguage?.toUpperCase() || "EN"}
+              icon={<Languages className="w-3.5 h-3.5 text-stone-400" />}
+            />
+          </Section>
+        </div>
 
-              <Button
-                onClick={() => router.push("/complete-profile")}
-                className="bg-green-600 hover:bg-green-700 text-white rounded-lg px-4 py-2 flex items-center gap-2"
-              >
-                <Pencil size={18} />
-                Edit Garden Profile
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
+        <p className="text-xs text-stone-500 text-center mt-6">
+          Your data stays on AgriBloom. We only use it to personalize prices, weather, and chat
+          replies.
+        </p>
       </div>
+    </main>
+  );
+}
+
+function Section({
+  title,
+  icon,
+  children,
+}: {
+  title: string;
+  icon?: React.ReactNode;
+  children: React.ReactNode;
+}) {
+  return (
+    <div>
+      <h2 className="flex items-center gap-2 text-xs uppercase tracking-[0.2em] text-stone-500 mb-3">
+        {icon}
+        {title}
+      </h2>
+      <div className="space-y-1.5">{children}</div>
     </div>
   );
 }
 
-function ProfileDetail({ icon, label, value }: { icon: React.ReactNode, label: string, value: string }) {
+function Row({
+  label,
+  value,
+  icon,
+  tone,
+}: {
+  label: string;
+  value: string;
+  icon?: React.ReactNode;
+  tone?: "good" | "warn";
+}) {
+  const valueClass =
+    tone === "good"
+      ? "text-green-700 font-medium"
+      : tone === "warn"
+        ? "text-amber-700 font-medium"
+        : "text-stone-900 font-medium";
   return (
-    <div className="bg-green-50/50 rounded-lg p-3 border border-green-100">
-      <div className="flex items-center gap-2 text-green-800">
-        <div className="bg-green-100 p-2 rounded-full">
-          {icon}
-        </div>
-        <div>
-          <p className="font-medium text-sm text-green-600">{label}</p>
-          <p className="font-semibold">{value}</p>
-        </div>
-      </div>
+    <div className="flex items-center justify-between text-sm py-1">
+      <span className="text-stone-500 inline-flex items-center gap-2">
+        {icon}
+        {label}
+      </span>
+      <span className={valueClass}>{value}</span>
     </div>
   );
+}
+
+function Divider() {
+  return <div className="border-t border-stone-100" />;
 }

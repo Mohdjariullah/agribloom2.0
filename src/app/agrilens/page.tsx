@@ -1,351 +1,207 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
+import Link from "next/link";
+import axios from "axios";
+import { CropImage } from "@/components/CropImage";
+import { motion, AnimatePresence } from "framer-motion";
+import { Search } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Search } from "lucide-react";
-import Image from "next/image";
-import cropDataRaw from "@/data/agrilens.json";
-import { motion, AnimatePresence } from "framer-motion";
+import { PageHeader, PageShell } from "@/components/PageHeader";
 
-interface Crop {
-  id: number;
-  commonName: string;
-  scientificName: string;
-  season: string;
-  sowingMonth: string;
-  floweringPeriod: string;
-  harvestingMonth: string;
-  waterRequirementPerDayLiters: string;
-  sunlightRequirement: string;
-  soilType: string;
-  image: string;
-}
+type Crop = {
+  _id: string;
+  slug: string;
+  name: string;
+  scientificName?: string;
+  category: string;
+  season: string[];
+  soilTypes: string[];
+  waterRequirement?: "low" | "medium" | "high";
+  waterRequirementText?: string;
+  sowingMonth?: string;
+  floweringPeriod?: string;
+  harvestingMonth?: string;
+  sunlightRequirement?: string;
+  imageUrl?: string;
+};
 
-const cropData: Crop[] = cropDataRaw;
-
-const seasonInfo = [
-  {
-    name: "Kharif Season",
-    time: "June to October (monsoon)",
-    sowing: "Beginning of the monsoon (June-July)",
-    harvesting: "September to October",
-  },
-  {
-    name: "Rabi Season",
-    time: "October to March (winter)",
-    sowing: "After the monsoon (October-November)",
-    harvesting: "March to April",
-  },
-  {
-    name: "Zaid Season",
-    time: "March to June (summer)",
-    description: "Shorter season between rabi and kharif",
-  },
+const SEASONS = [
+  { value: "", label: "All seasons" },
+  { value: "kharif", label: "Kharif (monsoon)" },
+  { value: "rabi", label: "Rabi (winter)" },
+  { value: "zaid", label: "Zaid (summer)" },
 ];
 
-const sunlightInfo = [
-  {
-    name: "Full Sun",
-    emoji: "🌞",
-    definition: "At least 6–8 hours of direct sunlight daily.",
-  },
-  {
-    name: "Partial Sun / Partial Shade",
-    emoji: "⛅",
-    definition:
-      "3–6 hours of direct sunlight, often filtered or with shade during part of the day.",
-    details:
-      "Partial sun: Slightly more light, prefers morning sun\nPartial shade: Slightly less light, protected from harsh afternoon sun",
-  },
-  {
-    name: "Dappled Sunlight / Filtered Light",
-    emoji: "☁",
-    definition:
-      "Sunlight that comes through tree leaves or netting – not direct.",
-  },
-  {
-    name: "Full Shade",
-    emoji: "🌑",
-    definition:
-      "Less than 3 hours of direct sunlight; mostly indirect or reflected light.",
-  },
+const CATEGORIES = [
+  { value: "", label: "All categories" },
+  { value: "cereal", label: "Cereal" },
+  { value: "pulse", label: "Pulse" },
+  { value: "vegetable", label: "Vegetable" },
+  { value: "fruit", label: "Fruit" },
+  { value: "oilseed", label: "Oilseed" },
+  { value: "spice", label: "Spice" },
+  { value: "cash_crop", label: "Cash crop" },
 ];
 
 export default function AgriLensPage() {
-  const [searchTerm, setSearchTerm] = useState<string>("");
-  const [selectedCrop, setSelectedCrop] = useState<Crop | null>(null);
+  const [crops, setCrops] = useState<Crop[]>([]);
+  const [total, setTotal] = useState(0);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const handleSearch = (term: string) => {
-    setSearchTerm(term);
+  const [search, setSearch] = useState("");
+  const [season, setSeason] = useState("");
+  const [category, setCategory] = useState("");
+  const [debounced, setDebounced] = useState("");
+
+  // Debounce search input
+  useEffect(() => {
+    const t = setTimeout(() => setDebounced(search.trim()), 300);
+    return () => clearTimeout(t);
+  }, [search]);
+
+  useEffect(() => {
+    let cancelled = false;
+    const params = new URLSearchParams();
+    if (debounced) params.set("q", debounced);
+    if (season) params.set("season", season);
+    if (category) params.set("category", category);
+    params.set("limit", "60");
+
+    setLoading(true);
     setError(null);
+    axios
+      .get(`/api/crops?${params.toString()}`)
+      .then((res) => {
+        if (cancelled) return;
+        setCrops(res.data.items ?? []);
+        setTotal(res.data.total ?? 0);
+      })
+      .catch((err) => {
+        if (cancelled) return;
+        setError(
+          axios.isAxiosError(err)
+            ? err.response?.data?.error ?? err.message
+            : "Failed to load crops"
+        );
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
 
-    if (!term.trim()) {
-      setSelectedCrop(null);
-      return;
-    }
+    return () => {
+      cancelled = true;
+    };
+  }, [debounced, season, category]);
 
-    const normalizedTerm = term.toLowerCase().replace(/[()]/g, "").trim();
-
-    const crop = cropData.find((item) => {
-      const commonName = item.commonName.toLowerCase().replace(/[()]/g, "");
-      return commonName.includes(normalizedTerm);
-    });
-
-    if (crop) {
-      setSelectedCrop(crop);
-    } else {
-      setSelectedCrop(null);
-      setError("This crop data is not available.");
-    }
-  };
+  const headline = useMemo(() => {
+    if (loading) return "Loading…";
+    if (error) return error;
+    if (!crops.length) return "No crops match your filters.";
+    return `${total} crop${total === 1 ? "" : "s"}`;
+  }, [loading, error, crops.length, total]);
 
   return (
-    <div className="max-w-7xl mx-auto px-4 py-12">
-      <motion.div
-        initial={{ opacity: 0, y: -20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5 }}
-        className="text-center mb-12"
-      >
-        <h1 className="text-5xl font-bold mb-4 bg-gradient-to-r from-green-600 to-emerald-500 bg-clip-text text-transparent">
-          AgriLens Crop Search
-        </h1>
-        <p className="text-lg text-gray-600">
-          Discover detailed information about various crops
-        </p>
-      </motion.div>
+    <PageShell>
+      <PageHeader
+        eyebrow="Crops"
+        title="Browse 200+ crops with filters."
+        subtitle="Season, soil, water needs, sowing months — all in one place."
+      />
 
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ delay: 0.2 }}
-        className="max-w-2xl mx-auto mb-16 relative"
-      >
-        <Label htmlFor="crop-search" className="sr-only">
-          Search Crop
-        </Label>
+      <div className="grid grid-cols-1 md:grid-cols-[1fr_220px_220px] gap-3 mb-8">
         <div className="relative">
-          <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
+          <Label htmlFor="crop-search" className="sr-only">Search crop</Label>
+          <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-stone-400" />
           <Input
             id="crop-search"
             type="text"
-            placeholder="Search for a crop (e.g., Eggplant, Wheat, Tomato)"
-            className="pl-12 py-6 text-lg border-2 border-gray-200 rounded-xl focus-visible:ring-2 focus-visible:ring-green-500 focus-visible:border-transparent shadow-sm hover:border-gray-300 transition-all"
-            value={searchTerm}
-            onChange={(e) => handleSearch(e.target.value)}
+            placeholder="Search crop (e.g., Tomato, Rice)…"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="pl-11 py-5 bg-white border-stone-300 focus-visible:ring-stone-900 focus-visible:border-stone-900 rounded-lg"
           />
         </div>
-      </motion.div>
+
+        <select
+          value={season}
+          onChange={(e) => setSeason(e.target.value)}
+          className="bg-white border border-stone-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-stone-900 focus:border-stone-900"
+        >
+          {SEASONS.map((s) => (
+            <option key={s.value} value={s.value}>{s.label}</option>
+          ))}
+        </select>
+
+        <select
+          value={category}
+          onChange={(e) => setCategory(e.target.value)}
+          className="bg-white border border-stone-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-stone-900 focus:border-stone-900"
+        >
+          {CATEGORIES.map((c) => (
+            <option key={c.value} value={c.value}>{c.label}</option>
+          ))}
+        </select>
+      </div>
+
+      <p className="text-stone-500 text-sm mb-5">{headline}</p>
 
       <AnimatePresence>
-        {error && (
-          <motion.p
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0 }}
-            className="text-center text-red-500 font-medium text-lg mb-8"
-          >
-            {error}
-          </motion.p>
-        )}
-      </AnimatePresence>
-
-      <AnimatePresence>
-        {selectedCrop && (
+        {!loading && !error && crops.length > 0 && (
           <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.3 }}
-            className="bg-white rounded-3xl overflow-hidden shadow-2xl border border-gray-100"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6"
           >
-            <div className="flex flex-col md:flex-row">
-              {/* Image Section */}
-              <div className="md:w-1/3 relative h-64 md:h-auto">
-                <Image
-                  src="/nature/default.jpg"
-                  alt={selectedCrop.commonName}
-                  fill
-                  className="object-cover"
-                  priority
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent flex items-end p-6">
-                  <div>
-                    <h2 className="text-3xl font-bold text-white">
-                      🌿 {selectedCrop.commonName}
-                    </h2>
-                    <p className="text-gray-200 italic">
-                      {selectedCrop.scientificName}
+            {crops.map((crop) => (
+              <Link
+                key={crop._id}
+                href={`/crops/${crop.slug}`}
+                className="group bg-white rounded-2xl border border-stone-200 hover:border-stone-300 hover:shadow-md overflow-hidden transition-all"
+              >
+                <div className="relative h-40 bg-stone-50 overflow-hidden">
+                  <CropImage
+                    src={crop.imageUrl}
+                    alt={crop.name}
+                    fill
+                    sizes="(max-width: 768px) 100vw, 33vw"
+                    className="object-cover group-hover:scale-105 transition-transform duration-500"
+                  />
+                </div>
+                <div className="p-4">
+                  <div className="flex items-baseline justify-between gap-2 mb-1">
+                    <h3 className="text-base font-semibold text-stone-900 truncate">
+                      {crop.name}
+                    </h3>
+                    <span className="text-[10px] uppercase tracking-wider text-stone-500 bg-stone-100 px-2 py-0.5 rounded-full whitespace-nowrap">
+                      {crop.category.replace("_", " ")}
+                    </span>
+                  </div>
+                  {crop.scientificName && (
+                    <p className="text-xs text-stone-500 italic mb-3 truncate">
+                      {crop.scientificName}
                     </p>
+                  )}
+                  <div className="flex flex-wrap gap-1.5 text-[11px]">
+                    {crop.season.map((s) => (
+                      <span key={s} className="bg-amber-50 text-amber-800 px-2 py-0.5 rounded-full capitalize">
+                        {s}
+                      </span>
+                    ))}
+                    {crop.waterRequirement && (
+                      <span className="bg-blue-50 text-blue-800 px-2 py-0.5 rounded-full capitalize">
+                        {crop.waterRequirement} water
+                      </span>
+                    )}
                   </div>
                 </div>
-              </div>
-
-              {/* Details Section */}
-              <div className="md:w-2/3 p-8 md:p-10">
-                {/* Crop Name Header */}
-                <div className="mb-8">
-                  <h2 className="text-3xl font-bold text-green-700">
-                    {selectedCrop.commonName}
-                  </h2>
-                  <p className="text-lg text-gray-600 italic">
-                    {selectedCrop.scientificName}
-                  </p>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-                  <motion.div
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    transition={{ delay: 0.2 }}
-                    className="p-4 bg-green-50 rounded-xl"
-                  >
-                    <h3 className="font-semibold text-green-700 mb-3 flex items-center">
-                      <span className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center mr-2">
-                        🌱
-                      </span>
-                      Growth Info
-                    </h3>
-                    <ul className="space-y-2">
-                      <li>
-                        <span className="font-medium">Season:</span>{" "}
-                        {selectedCrop.season}
-                      </li>
-                      <li>
-                        <span className="font-medium">Sowing Month:</span>{" "}
-                        {selectedCrop.sowingMonth}
-                      </li>
-                      <li>
-                        <span className="font-medium">Flowering Period:</span>{" "}
-                        {selectedCrop.floweringPeriod}
-                      </li>
-                      <li>
-                        <span className="font-medium">Harvesting Month:</span>{" "}
-                        {selectedCrop.harvestingMonth}
-                      </li>
-                    </ul>
-                  </motion.div>
-
-                  <motion.div
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    transition={{ delay: 0.3 }}
-                    className="p-4 bg-amber-50 rounded-xl"
-                  >
-                    <h3 className="font-semibold text-amber-700 mb-3 flex items-center">
-                      <span className="w-8 h-8 bg-amber-100 rounded-full flex items-center justify-center mr-2">
-                        💧
-                      </span>
-                      Requirements
-                    </h3>
-                    <ul className="space-y-2">
-                      <li>
-                        <span className="font-medium">Water:</span>{" "}
-                        {selectedCrop.waterRequirementPerDayLiters}
-                      </li>
-                      <li>
-                        <span className="font-medium">Sunlight:</span>{" "}
-                        {selectedCrop.sunlightRequirement}
-                      </li>
-                      <li>
-                        <span className="font-medium">Soil Type:</span>{" "}
-                        {selectedCrop.soilType}
-                      </li>
-                    </ul>
-                  </motion.div>
-                </div>
-
-                {/* Agricultural Information Sections */}
-                <div className="space-y-8">
-                  <motion.div
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    transition={{ delay: 0.4 }}
-                    className="p-6 bg-blue-50 rounded-xl"
-                  >
-                    <h3 className="text-xl font-bold text-blue-700 mb-4 flex items-center">
-                      <span className="mr-2">🌾</span>
-                      Indian Crop Seasons
-                    </h3>
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                      {seasonInfo.map((season, index) => (
-                        <div
-                          key={index}
-                          className="bg-white p-4 rounded-lg shadow-sm"
-                        >
-                          <h4 className="font-semibold text-green-700 mb-2">
-                            {season.name}
-                          </h4>
-                          <ul className="text-sm space-y-1">
-                            <li>⏱️ Time: {season.time}</li>
-                            <li>🌱 Sowing: {season.sowing}</li>
-                            <li>🔄 Harvesting: {season.harvesting}</li>
-                            {season.description && (
-                              <li>📝 {season.description}</li>
-                            )}
-                          </ul>
-                        </div>
-                      ))}
-                    </div>
-                  </motion.div>
-
-                  <motion.div
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    transition={{ delay: 0.5 }}
-                    className="p-6 bg-purple-50 rounded-xl"
-                  >
-                    <h3 className="text-xl font-bold text-purple-700 mb-4 flex items-center">
-                      <span className="mr-2">☀️</span>
-                      Sunlight Requirements Guide
-                    </h3>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      {sunlightInfo.map((light, index) => (
-                        <div
-                          key={index}
-                          className="bg-white p-4 rounded-lg shadow-sm"
-                        >
-                          <h4 className="font-semibold flex items-center">
-                            <span className="mr-2">{light.emoji}</span>
-                            {light.name}
-                          </h4>
-                          <p className="text-sm mt-2">{light.definition}</p>
-                          {light.details && (
-                            <p className="text-xs mt-2 whitespace-pre-line text-gray-600">
-                              {light.details}
-                            </p>
-                          )}
-                        </div>
-                      ))}
-                    </div>
-                  </motion.div>
-                </div>
-              </div>
-            </div>
+              </Link>
+            ))}
           </motion.div>
         )}
       </AnimatePresence>
-
-      {!selectedCrop && !error && searchTerm === "" && (
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          className="text-center py-20"
-        >
-          <div className="inline-block p-6 bg-green-50 rounded-2xl mb-6">
-            <Search className="h-12 w-12 text-green-500" />
-          </div>
-          <h3 className="text-2xl font-medium text-gray-700 mb-2">
-            Search for a crop
-          </h3>
-          <p className="text-gray-500 max-w-md mx-auto">
-            Enter the name of a crop to discover detailed information about its
-            growing conditions, requirements, and more.
-          </p>
-        </motion.div>
-      )}
-    </div>
+    </PageShell>
   );
 }

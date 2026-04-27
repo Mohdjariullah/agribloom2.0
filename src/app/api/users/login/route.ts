@@ -20,6 +20,8 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    const SEVEN_DAYS_SECONDS = 60 * 60 * 24 * 7;
+
     const token = jwt.sign(
       {
         id: user._id,
@@ -28,36 +30,24 @@ export async function POST(request: NextRequest) {
         role: user.role,
       },
       process.env.TOKEN_SECRET!,
-      { expiresIn: "1d" } // Token is still valid for 1 day on server, but cookie won't persist
+      { expiresIn: SEVEN_DAYS_SECONDS }
     );
 
-    // ✅ Create response
-    const response = new NextResponse(
-      JSON.stringify({
-        message: "Login successful",
-        success: true,
-        profileCompleted: user.profileCompleted,
-      }),
-      {
-        status: 200,
-        headers: {
-          "Content-Type": "application/json",
-        },
-      }
-    );
+    const response = NextResponse.json({
+      message: "Login successful",
+      success: true,
+      profileCompleted: user.profileCompleted,
+      role: user.role,
+      username: user.username,
+    });
 
-    // ✅ Set session-only cookie (no maxAge)
-    response.cookies.set(
-      "token",
-      token,
-      {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === "production",
-        sameSite: "lax",
-        path: "/",
-        // ❌ No maxAge or expires – makes it a session cookie
-      }
-    );
+    response.cookies.set("token", token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "lax",
+      path: "/",
+      maxAge: SEVEN_DAYS_SECONDS,
+    });
 
     return response;
   } catch (error: unknown) {

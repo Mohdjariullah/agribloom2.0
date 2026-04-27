@@ -6,7 +6,17 @@ export interface IUser extends Document {
   password: string;
   role: "farmer" | "admin";
   isVerified?: boolean;
-  isAdmin?: boolean;
+  // Farming profile (used for chat personalization, weather, prices)
+  state?: string;
+  district?: string;
+  village?: string;
+  lat?: number;
+  lon?: number;
+  primaryCrops?: string[];
+  farmSizeAcres?: number;
+  preferredLanguage?: string;
+  phone?: string;
+  // Legacy "favorite" fields kept for backward compat
   favoriteVegetable?: string;
   favoriteFruit?: string;
   favoriteTree?: string;
@@ -31,6 +41,8 @@ const userSchema = new Schema<IUser>({
     type: String,
     required: [true, "Please enter your email"],
     unique: true,
+    lowercase: true,
+    trim: true,
   },
   password: {
     type: String,
@@ -41,52 +53,34 @@ const userSchema = new Schema<IUser>({
     enum: ["farmer", "admin"],
     default: "farmer",
   },
-  isVerified: {
-    type: Boolean,
-    default: false,
-  },
-  isAdmin: {
-    type: Boolean,
-    default: false,
-  },
-  favoriteVegetable: {
-    type: String,
-    default: "",
-  },
-  favoriteFruit: {
-    type: String,
-    default: "",
-  },
-  favoriteTree: {
-    type: String,
-    default: "",
-  },
-  favoriteFlower: {
-    type: String,
-    default: "",
-  },
-  favoriteSeason: {
-    type: String,
-    default: "",
-  },
-  favoriteActivity: {
-    type: String,
-    default: "",
-  },
-  profileCompleted: {
-    type: Boolean,
-    default: false,
-  },
-  createdAt: {
-    type: Date,
-    default: Date.now,
-  },
+  isVerified: { type: Boolean, default: false },
+
+  // Farming profile
+  state: { type: String, default: "" },
+  district: { type: String, default: "" },
+  village: { type: String, default: "" },
+  lat: Number,
+  lon: Number,
+  primaryCrops: { type: [String], default: [] },
+  farmSizeAcres: Number,
+  preferredLanguage: { type: String, default: "en" },
+  phone: { type: String, default: "" },
+
+  // Legacy favorites — left in for back-compat with old data
+  favoriteVegetable: { type: String, default: "" },
+  favoriteFruit: { type: String, default: "" },
+  favoriteTree: { type: String, default: "" },
+  favoriteFlower: { type: String, default: "" },
+  favoriteSeason: { type: String, default: "" },
+  favoriteActivity: { type: String, default: "" },
+
+  profileCompleted: { type: Boolean, default: false },
+  createdAt: { type: Date, default: Date.now },
   forgetPasswordToken: String,
   forgetPasswordTokenExpiry: Date,
   verifyToken: String,
   verifyTokenExpiry: Date,
 });
 
-// ✅ Cast the model to correct type explicitly
 const User: Model<IUser> = models.User || model<IUser>("User", userSchema);
 export default User;

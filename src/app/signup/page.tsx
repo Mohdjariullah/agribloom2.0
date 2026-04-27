@@ -1,21 +1,16 @@
 "use client";
 
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
-import { Label } from "@/components/ui/label";
-import { Sprout } from "lucide-react";
-import { motion } from "framer-motion";
-import { useRouter } from "next/navigation";
+import React, { useState } from "react";
 import Link from "next/link";
-import React, { useEffect, useState } from "react";
 import axios from "axios";
 import { toast } from "react-hot-toast";
+import { useRouter } from "next/navigation";
+import AuthShell, {
+  FormInput,
+  FormLabel,
+  FormSelect,
+  PrimaryButton,
+} from "@/components/AuthShell";
 
 export default function SignupPage() {
   const router = useRouter();
@@ -26,180 +21,140 @@ export default function SignupPage() {
     role: "farmer",
     adminKey: "",
   });
-
-  const [error, setError] = useState("");
-  const [buttonDisabled, setButtonDisabled] = useState(true);
   const [loading, setLoading] = useState(false);
 
-  const onSignup = async () => {
+  const buttonDisabled =
+    !user.username || !user.email || !user.password || user.password.length < 6 || loading;
+
+  const onSignup = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (buttonDisabled) return;
     try {
       setLoading(true);
-      setError("");
-
       const payload: Record<string, unknown> = {
         username: user.username,
         email: user.email,
         password: user.password,
         role: user.role,
       };
+      if (user.role === "admin") payload.adminKey = user.adminKey;
 
-      // Only include adminKey if role is admin
-      if (user.role === "admin") {
-        payload.adminKey = user.adminKey;
-      }
-
-      const response = await axios.post("/api/users/signup", payload);
-      toast.success(response.data.message || "Signup successful.");
+      await axios.post("/api/users/signup", payload);
+      toast.success("Account created. Check your email to verify.");
       router.push("/login");
     } catch (error: unknown) {
       let msg = "Signup failed";
-      if (error && typeof error === "object" && "response" in error && error.response && typeof error.response === "object" && "data" in error.response && error.response.data && typeof error.response.data === "object" && "message" in error.response.data) {
+      if (
+        error &&
+        typeof error === "object" &&
+        "response" in error &&
+        error.response &&
+        typeof error.response === "object" &&
+        "data" in error.response &&
+        error.response.data &&
+        typeof error.response.data === "object" &&
+        "message" in error.response.data
+      ) {
         msg = (error.response.data as { message?: string }).message || msg;
       }
-      setError(msg);
       toast.error(msg);
     } finally {
       setLoading(false);
     }
   };
 
-  useEffect(() => {
-    const { username, email, password } = user;
-    setButtonDisabled(!(username && email && password));
-  }, [user]);
-
   return (
-    <div className="min-h-screen bg-gradient-to-br from-green-100 to-white flex items-center justify-center relative overflow-hidden">
-      {/* Decorative plants */}
-      <motion.div
-        className="absolute left-4 bottom-4"
-        animate={{ rotate: [0, 5, -5, 0] }}
-        transition={{ repeat: Infinity, duration: 3, ease: "easeInOut" }}
-      >
-        <Sprout className="text-green-700 w-10 h-10" />
-      </motion.div>
-      <motion.div
-        className="absolute right-4 bottom-4"
-        animate={{ rotate: [0, -5, 5, 0] }}
-        transition={{ repeat: Infinity, duration: 3, ease: "easeInOut" }}
-      >
-        <Sprout className="text-green-700 w-10 h-10" />
-      </motion.div>
+    <AuthShell
+      title="Create your account"
+      subtitle="Free forever. Save your state and crops to get personalized insights."
+      footer={
+        <>
+          Already have an account?{" "}
+          <Link href="/login" className="text-stone-900 font-medium hover:underline">
+            Sign in
+          </Link>
+        </>
+      }
+    >
+      <form onSubmit={onSignup} className="space-y-4">
+        <div>
+          <FormLabel htmlFor="username">Name</FormLabel>
+          <FormInput
+            id="username"
+            value={user.username}
+            onChange={(e) => setUser({ ...user, username: e.target.value })}
+            placeholder="Your full name"
+            autoComplete="name"
+            required
+          />
+        </div>
 
-      <Card className="w-full max-w-md shadow-lg border-green-300 border-2">
-        <CardHeader>
-          <CardTitle className="text-center text-2xl text-green-700">
-            🌱 Welcome to AgriBloom
-          </CardTitle>
-          <p className="text-sm text-muted-foreground text-center">
-            Create your account to start growing with us.
-          </p>
-        </CardHeader>
+        <div>
+          <FormLabel htmlFor="email">Email</FormLabel>
+          <FormInput
+            id="email"
+            type="email"
+            autoComplete="email"
+            value={user.email}
+            onChange={(e) => setUser({ ...user, email: e.target.value })}
+            placeholder="you@example.com"
+            required
+          />
+        </div>
 
-        <CardContent>
-          <form
-            onSubmit={(e) => {
-              e.preventDefault();
-              onSignup();
-            }}
-            className="space-y-4"
+        <div>
+          <FormLabel
+            htmlFor="password"
+            hint={<span>{user.password.length}/6+</span>}
           >
-            <div>
-              <Label htmlFor="username">Username</Label>
-              <Input
-                id="username"
-                value={user.username}
-                onChange={(e) =>
-                  setUser({ ...user, username: e.target.value })
-                }
-                placeholder="Enter your name"
-              />
-            </div>
+            Password
+          </FormLabel>
+          <FormInput
+            id="password"
+            type="password"
+            autoComplete="new-password"
+            value={user.password}
+            onChange={(e) => setUser({ ...user, password: e.target.value })}
+            placeholder="At least 6 characters"
+            required
+            minLength={6}
+          />
+        </div>
 
-            <div>
-              <Label htmlFor="email">Email</Label>
-              <Input
-                id="email"
-                type="email"
-                value={user.email}
-                onChange={(e) => setUser({ ...user, email: e.target.value })}
-                placeholder="you@agribloom.com"
-              />
-            </div>
+        <div>
+          <FormLabel htmlFor="role">I&apos;m signing up as</FormLabel>
+          <FormSelect
+            id="role"
+            value={user.role}
+            onChange={(e) => setUser({ ...user, role: e.target.value, adminKey: "" })}
+          >
+            <option value="farmer">Farmer</option>
+            <option value="admin">Admin</option>
+          </FormSelect>
+        </div>
 
-            <div>
-              <Label htmlFor="password">Password</Label>
-              <Input
-                id="password"
-                type="password"
-                value={user.password}
-                onChange={(e) =>
-                  setUser({ ...user, password: e.target.value })
-                }
-                placeholder="••••••••"
-              />
-            </div>
-
-            <div>
-              <Label htmlFor="role">Role</Label>
-              <select
-                id="role"
-                className="w-full p-2 border rounded"
-                value={user.role}
-                onChange={(e) =>
-                  setUser({
-                    ...user,
-                    role: e.target.value,
-                    adminKey: "", // reset admin key if role changes
-                  })
-                }
-              >
-                <option value="farmer">Farmer</option>
-                <option value="admin">Admin</option>
-              </select>
-            </div>
-
-            {user.role === "admin" && (
-              <div>
-                <Label htmlFor="adminKey">Admin Key</Label>
-                <Input
-                  id="adminKey"
-                  type="text"
-                  value={user.adminKey}
-                  onChange={(e) =>
-                    setUser({ ...user, adminKey: e.target.value })
-                  }
-                  placeholder="Enter secret admin key"
-                />
-              </div>
-            )}
-
-            <Button
-              type="submit"
-              disabled={buttonDisabled || loading}
-              className="w-full bg-green-600 hover:bg-green-700"
-            >
-              {loading ? "Signing up..." : "Signup"}
-            </Button>
-
-            {error && (
-              <p className="text-red-600 text-sm text-center mt-2">{error}</p>
-            )}
-          </form>
-
-          <div className="text-center mt-4">
-            <span className="text-sm text-gray-600">
-              Already have an account?
-            </span>{" "}
-            <Link
-              href="/login"
-              className="text-green-700 font-semibold hover:underline"
-            >
-              Login
-            </Link>
+        {user.role === "admin" && (
+          <div>
+            <FormLabel htmlFor="adminKey">Admin key</FormLabel>
+            <FormInput
+              id="adminKey"
+              type="text"
+              value={user.adminKey}
+              onChange={(e) => setUser({ ...user, adminKey: e.target.value })}
+              placeholder="Provided by your administrator"
+              required
+            />
           </div>
-        </CardContent>
-      </Card>
-    </div>
+        )}
+
+        <PrimaryButton type="submit" disabled={buttonDisabled} className="mt-2">
+          {loading ? "Creating account…" : "Create account"}
+        </PrimaryButton>
+
+        <p className="text-xs text-stone-500 text-center pt-1">
+          By signing up you agree to receive farming alerts and tips.
+        </p>
+      </form>
+    </AuthShell>
   );
 }

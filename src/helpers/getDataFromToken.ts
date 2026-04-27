@@ -1,12 +1,6 @@
 import { NextRequest } from "next/server";
 import jwt from "jsonwebtoken";
 
-const secret = (process.env.TOKEN_SECRET || process.env.JWT_SECRET) as string;
-
-if (!secret) {
-  throw new Error("JWT secret is not defined in environment variables");
-}
-
 interface DecodedToken {
   id: string;
   role: "admin" | "farmer";
@@ -14,14 +8,20 @@ interface DecodedToken {
   exp: number;
 }
 
-// Helper for API routes to decode token string directly
+function getSecret(): string {
+  const secret = process.env.TOKEN_SECRET || process.env.JWT_SECRET;
+  if (!secret) {
+    throw new Error("JWT secret is not defined in environment variables");
+  }
+  return secret;
+}
+
 export const decodeTokenString = (token: string): DecodedToken => {
   if (!token) {
     throw new Error("No token provided");
   }
   try {
-    const decodedToken = jwt.verify(token, secret) as unknown as DecodedToken;
-    return decodedToken;
+    return jwt.verify(token, getSecret()) as unknown as DecodedToken;
   } catch (error) {
     if (error instanceof Error) {
       throw new Error(error.message || "Token verification failed");
@@ -38,8 +38,7 @@ export const getDataFromToken = (request: NextRequest): DecodedToken => {
   }
 
   try {
-    const decodedToken = jwt.verify(token, secret) as unknown as DecodedToken;
-    return decodedToken;
+    return jwt.verify(token, getSecret()) as unknown as DecodedToken;
   } catch (error: unknown) {
     if (error instanceof Error) {
       throw new Error(error.message || "Token verification failed");

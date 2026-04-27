@@ -1,16 +1,17 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useMemo, useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Search, HeartPulse, Clock, Nut, Apple, Carrot } from "lucide-react";
+import { Search, Clock, AlertCircle } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import cropDataRaw from "@/data/healthandbenifits.json";
+import { PageHeader, PageShell } from "@/components/PageHeader";
 
 interface HealthBenefits {
-  benefit1: string;
-  benefit2: string;
-  benefit3: string;
+  benefit1?: string;
+  benefit2?: string;
+  benefit3?: string;
 }
 
 interface Crop {
@@ -28,421 +29,255 @@ interface Crop {
 }
 
 const cropData: Crop[] = cropDataRaw as Crop[];
-const timeSlots = [
-  {
-    period: "Morning",
-    time: "6:00 AM – 9:00 AM",
-    description: "Ideal for detoxifying, vitamin-rich fruits, light carbs",
-  },
-  {
-    period: "Mid-Morning",
-    time: "9:00 AM – 11:00 AM",
-    description: "Best for fruits, nuts, energy-boosting foods",
-  },
-  {
-    period: "Lunch",
-    time: "12:00 PM – 2:00 PM",
-    description: "Heavier foods, high in protein, complex carbs",
-  },
-  {
-    period: "Afternoon",
-    time: "2:00 PM – 5:00 PM",
-    description: "Hydrating fruits, digestion-aiding items",
-  },
-  {
-    period: "Evening",
-    time: "5:00 PM – 7:00 PM",
-    description: "Light veggies, low-fat, antioxidant foods",
-  },
-  {
-    period: "Night",
-    time: "7:00 PM – 9:00 PM",
-    description: "Easily digestible, calming foods",
-  },
-  {
-    period: "Midnight",
-    time: "12:00 AM – 2:00 AM",
-    description: "Rarely suggested unless for herbs or medical use",
-  },
-  {
-    period: "After Meals",
-    time: "15–30 minutes after eating",
-    description: "Usually for herbs like fennel, cardamom, etc.",
-  },
+
+const TIME_SLOTS = [
+  { period: "Morning", time: "6 – 9 AM", description: "Detoxifying, vitamin-rich fruits, light carbs" },
+  { period: "Mid-Morning", time: "9 – 11 AM", description: "Fruits, nuts, energy-boosting foods" },
+  { period: "Lunch", time: "12 – 2 PM", description: "Heavier foods, high in protein, complex carbs" },
+  { period: "Afternoon", time: "2 – 5 PM", description: "Hydrating fruits, digestion-aiding items" },
+  { period: "Evening", time: "5 – 7 PM", description: "Light veggies, low-fat, antioxidant foods" },
+  { period: "Night", time: "7 – 9 PM", description: "Easily digestible, calming foods" },
 ];
 
 export default function HealthBenefitsPage() {
-  const [searchTerm, setSearchTerm] = useState<string>("");
-  const [selectedCrop, setSelectedCrop] = useState<Crop | null>(null);
+  const [search, setSearch] = useState("");
   const [error, setError] = useState<string | null>(null);
 
-  const handleSearch = (term: string) => {
-    setSearchTerm(term);
+  const selected = useMemo<Crop | null>(() => {
     setError(null);
-
-    if (!term.trim()) {
-      setSelectedCrop(null);
-      return;
+    if (!search.trim()) return null;
+    const term = search.toLowerCase().replace(/[()]/g, "").trim();
+    const match = cropData.find((c) =>
+      c.commonName.toLowerCase().replace(/[()]/g, "").includes(term)
+    );
+    if (!match) {
+      setError("No nutrition data for that crop yet.");
+      return null;
     }
-
-    const normalizedTerm = term.toLowerCase().replace(/[()]/g, "").trim();
-
-    const crop = cropData.find((item) => {
-      const commonName = item.commonName.toLowerCase().replace(/[()]/g, "");
-      return commonName.includes(normalizedTerm);
-    });
-
-    if (crop) {
-      setSelectedCrop(crop);
-    } else {
-      setSelectedCrop(null);
-      setError("This crop's health data is not available.");
-    }
-  };
+    return match;
+  }, [search]);
 
   return (
-    <div className="max-w-7xl mx-auto px-4 py-12">
-      {/* Header without images */}
-      <motion.div
-        initial={{ opacity: 0, y: -20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5 }}
-        className="flex items-center justify-center mb-12"
-      >
-        <div className="text-center">
-          <h1 className="text-5xl font-bold mb-4 bg-gradient-to-r from-rose-600 to-amber-500 bg-clip-text text-transparent">
-            <HeartPulse className="inline mr-3" size={40} />
-            Crop Health & Nutrition
-          </h1>
-          <p className="text-lg text-gray-600">
-            Discover the health benefits and nutritional values of crops
-          </p>
-        </div>
-      </motion.div>
+    <PageShell>
+      <PageHeader
+        eyebrow="Health & nutrition"
+        title="What does this crop give you?"
+        subtitle="Search any crop to see its health benefits, macronutrients, vitamins, ideal time to eat, and shelf life."
+      />
 
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ delay: 0.2 }}
-        className="max-w-2xl mx-auto mb-16 relative"
-      >
+      <div className="max-w-2xl mb-8 relative">
         <Label htmlFor="health-search" className="sr-only">
           Search Crop
         </Label>
-        <div className="relative">
-          <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
-          <Input
-            id="health-search"
-            type="text"
-            placeholder="Search for a crop (e.g., Pear, Mango, Spinach)"
-            className="pl-12 py-6 text-lg border-2 border-gray-200 rounded-xl focus-visible:ring-2 focus-visible:ring-rose-500 focus-visible:border-transparent shadow-sm hover:border-gray-300 transition-all"
-            value={searchTerm}
-            onChange={(e) => handleSearch(e.target.value)}
-          />
-        </div>
-      </motion.div>
+        <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-stone-400" />
+        <Input
+          id="health-search"
+          type="text"
+          placeholder="Search a crop (e.g. Mango, Spinach, Pear)…"
+          className="pl-11 py-5 bg-white border-stone-300 focus-visible:ring-stone-900 focus-visible:border-stone-900 rounded-lg"
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+        />
+      </div>
 
       <AnimatePresence>
-        {error && (
-          <motion.p
-            initial={{ opacity: 0, y: 20 }}
+        {error && !selected && (
+          <motion.div
+            initial={{ opacity: 0, y: 8 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0 }}
-            className="text-center text-red-500 font-medium text-lg mb-8"
+            className="mb-6 bg-amber-50 border border-amber-200 text-amber-800 rounded-xl p-3 text-sm flex gap-2 max-w-md"
           >
+            <AlertCircle className="w-4 h-4 mt-0.5 flex-shrink-0" />
             {error}
-          </motion.p>
+          </motion.div>
         )}
       </AnimatePresence>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        {/* Main Content Column */}
-        <div className="lg:col-span-2 space-y-8">
-          <AnimatePresence>
-            {selectedCrop ? (
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
+        {/* Main column */}
+        <div className="lg:col-span-2 space-y-5">
+          <AnimatePresence mode="wait">
+            {selected ? (
               <motion.div
-                initial={{ opacity: 0, y: 20 }}
+                key={selected.id}
+                initial={{ opacity: 0, y: 12 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0 }}
-                transition={{ duration: 0.3 }}
-                className="bg-white rounded-3xl overflow-hidden shadow-2xl border border-gray-100 p-8"
+                transition={{ duration: 0.2 }}
+                className="bg-white rounded-2xl border border-stone-200 shadow-sm p-6 sm:p-8 space-y-8"
               >
-                {/* Crop Name Header */}
-                <div className="mb-8 text-center">
-                  <h2 className="text-4xl font-bold text-rose-600">
-                    {selectedCrop.commonName}
-                  </h2>
-                  <p className="text-xl text-gray-600 italic">
-                    {selectedCrop.scientificName}
+                <header>
+                  <p className="text-xs uppercase tracking-[0.2em] text-stone-500 mb-2">
+                    {selected.scientificName}
                   </p>
-                </div>
+                  <h2 className="text-3xl font-semibold tracking-tight text-stone-900">
+                    {selected.commonName}
+                  </h2>
+                </header>
 
-                {/* Health Benefits - Enhanced Container */}
-                {selectedCrop.healthBenefits && (
-                  <motion.div
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    transition={{ delay: 0.2 }}
-                    className="mb-8 bg-gradient-to-r from-rose-50 to-amber-50 p-6 rounded-xl border border-rose-100"
-                  >
-                    <h3 className="text-2xl font-bold text-rose-700 mb-4 flex items-center justify-center">
-                      <HeartPulse className="mr-2" size={24} />
-                      Health Benefits of {selectedCrop.commonName}
-                    </h3>
-                    <ul className="space-y-4">
-                      {Object.values(selectedCrop.healthBenefits).map(
-                        (benefit, index) => (
-                          <li key={index} className="flex items-start bg-white p-4 rounded-lg shadow-sm">
-                            <span className="text-green-500 mr-3 text-xl">✓</span>
-                            <span className="text-lg">{benefit}</span>
+                {/* Health benefits */}
+                {selected.healthBenefits && (
+                  <Section title="Health benefits">
+                    <ul className="space-y-2.5">
+                      {Object.values(selected.healthBenefits)
+                        .filter((b): b is string => Boolean(b))
+                        .map((benefit, i) => (
+                          <li key={i} className="flex gap-2.5 text-stone-700 leading-relaxed text-sm">
+                            <span className="text-stone-400 flex-shrink-0">•</span>
+                            <span>{benefit}</span>
                           </li>
-                        )
-                      )}
+                        ))}
                     </ul>
-                  </motion.div>
+                  </Section>
                 )}
 
-                {/* Nutritional Values */}
-                {(selectedCrop.carbohydrates ||
-                  selectedCrop.proteins ||
-                  selectedCrop.fats) && (
-                  <motion.div
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    transition={{ delay: 0.3 }}
-                    className="mb-8"
+                {/* Macros */}
+                {(selected.carbohydrates != null ||
+                  selected.proteins != null ||
+                  selected.fats != null) && (
+                  <Section
+                    title="Macronutrients"
+                    hint="per 100 g edible portion"
                   >
-                    <h3 className="text-2xl font-bold text-amber-600 mb-4 flex items-center">
-                      <Nut className="mr-2" size={24} />
-                      Nutritional Values (per 100g)
-                    </h3>
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                      {selectedCrop.carbohydrates !== undefined && (
-                        <div className="bg-amber-50 p-4 rounded-lg">
-                          <p className="font-semibold text-amber-700">
-                            Carbohydrates
-                          </p>
-                          <p className="text-2xl font-bold">
-                            {selectedCrop.carbohydrates}g
-                          </p>
-                        </div>
-                      )}
-                      {selectedCrop.proteins !== undefined && (
-                        <div className="bg-blue-50 p-4 rounded-lg">
-                          <p className="font-semibold text-blue-700">
-                            Proteins
-                          </p>
-                          <p className="text-2xl font-bold">
-                            {selectedCrop.proteins}g
-                          </p>
-                        </div>
-                      )}
-                      {selectedCrop.fats !== undefined && (
-                        <div className="bg-green-50 p-4 rounded-lg">
-                          <p className="font-semibold text-green-700">
-                            Fats
-                          </p>
-                          <p className="text-2xl font-bold">
-                            {selectedCrop.fats}g
-                          </p>
-                        </div>
-                      )}
+                    <div className="grid grid-cols-3 gap-3">
+                      <Macro label="Carbs" value={selected.carbohydrates} unit="g" />
+                      <Macro label="Protein" value={selected.proteins} unit="g" />
+                      <Macro label="Fat" value={selected.fats} unit="g" />
                     </div>
-                    <p className="text-sm text-gray-500 mt-2 italic">
-                      Values are given in grams (g) per 100 grams of edible
-                      portion. This is the standard format used in official
-                      Indian nutrition data (NIN, ICMR) and global sources
-                      like USDA.
+                    <p className="text-xs text-stone-400 mt-3">
+                      Source: NIN/ICMR Indian Food Composition Tables, USDA.
                     </p>
-                  </motion.div>
+                  </Section>
                 )}
 
-                {/* Best Time to Consume and Shelf Life */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-                  {/* Best Time to Consume */}
-                  {selectedCrop.bestTimeToConsume && (
-                    <motion.div
-                      initial={{ opacity: 0, x: -20 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      transition={{ delay: 0.4 }}
-                      className="bg-white p-6 rounded-xl border border-green-100 shadow-sm"
-                    >
-                      <h3 className="text-xl font-bold text-green-700 mb-3 flex items-center">
-                        <Clock className="mr-2" size={20} />
-                        Best Time to Consume
-                      </h3>
-                      <div className="flex items-center">
-                        <span className="bg-green-100 text-green-800 px-3 py-1 rounded-full text-sm font-medium">
-                          {selectedCrop.bestTimeToConsume}
-                        </span>
-                        <p className="ml-3 text-gray-600 text-sm">
-                          {timeSlots.find(t => t.period === selectedCrop.bestTimeToConsume)?.description}
-                        </p>
-                      </div>
-                    </motion.div>
-                  )}
-
-                  {/* Shelf Life */}
-                  {selectedCrop.shelfLife && (
-                    <motion.div
-                      initial={{ opacity: 0, x: 20 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      transition={{ delay: 0.5 }}
-                      className="bg-white p-6 rounded-xl border border-amber-100 shadow-sm"
-                    >
-                      <h3 className="text-xl font-bold text-amber-700 mb-3 flex items-center">
-                        <Apple className="mr-2" size={20} />
-                        Shelf Life
-                      </h3>
-                      <div className="flex items-center">
-                        <span className="bg-amber-100 text-amber-800 px-3 py-1 rounded-full text-sm font-medium">
-                          {selectedCrop.shelfLife}
-                        </span>
-                        <p className="ml-3 text-gray-600 text-sm">
-                          When stored properly at room temperature or refrigerated
-                        </p>
-                      </div>
-                    </motion.div>
-                  )}
-                </div>
-
-                {/* Vitamins and Minerals */}
-                {(selectedCrop.vitamins || selectedCrop.minerals) && (
-                  <motion.div
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    transition={{ delay: 0.6 }}
-                    className="bg-gradient-to-r from-blue-50 to-cyan-50 p-6 rounded-xl border border-blue-100"
-                  >
-                    <h3 className="text-2xl font-bold text-blue-700 mb-4">
-                      Rich in Essential Nutrients
-                    </h3>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                      {/* Vitamins */}
-                      {selectedCrop.vitamins && (
+                {/* Vitamins + minerals */}
+                {(selected.vitamins?.length || selected.minerals?.length) && (
+                  <Section title="Rich in">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                      {selected.vitamins && selected.vitamins.length > 0 && (
                         <div>
-                          <h4 className="font-semibold text-blue-600 mb-2">Vitamins</h4>
-                          <div className="flex flex-wrap gap-2">
-                            {selectedCrop.vitamins.map((vitamin, index) => (
-                              <span
-                                key={index}
-                                className="bg-white px-3 py-1 rounded-full text-sm shadow-sm border border-blue-100"
-                              >
-                                {vitamin}
+                          <p className="text-[10px] uppercase tracking-wider text-stone-500 mb-2">
+                            Vitamins
+                          </p>
+                          <div className="flex flex-wrap gap-1.5">
+                            {selected.vitamins.map((v, i) => (
+                              <span key={i} className="bg-stone-100 text-stone-800 text-xs px-2.5 py-1 rounded-full">
+                                {v}
                               </span>
                             ))}
                           </div>
                         </div>
                       )}
-
-                      {/* Minerals */}
-                      {selectedCrop.minerals && (
+                      {selected.minerals && selected.minerals.length > 0 && (
                         <div>
-                          <h4 className="font-semibold text-cyan-600 mb-2">Minerals</h4>
-                          <div className="flex flex-wrap gap-2">
-                            {selectedCrop.minerals.map((mineral, index) => (
-                              <span
-                                key={index}
-                                className="bg-white px-3 py-1 rounded-full text-sm shadow-sm border border-cyan-100"
-                              >
-                                {mineral}
+                          <p className="text-[10px] uppercase tracking-wider text-stone-500 mb-2">
+                            Minerals
+                          </p>
+                          <div className="flex flex-wrap gap-1.5">
+                            {selected.minerals.map((m, i) => (
+                              <span key={i} className="bg-stone-100 text-stone-800 text-xs px-2.5 py-1 rounded-full">
+                                {m}
                               </span>
                             ))}
                           </div>
                         </div>
                       )}
                     </div>
-                  </motion.div>
+                  </Section>
+                )}
+
+                {/* Best time + shelf life */}
+                {(selected.bestTimeToConsume || selected.shelfLife) && (
+                  <Section title="When and how">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      {selected.bestTimeToConsume && (
+                        <Detail label="Best time to eat" value={selected.bestTimeToConsume} />
+                      )}
+                      {selected.shelfLife && (
+                        <Detail label="Shelf life" value={selected.shelfLife} />
+                      )}
+                    </div>
+                  </Section>
                 )}
               </motion.div>
-            ) : (
+            ) : !error ? (
               <motion.div
+                key="empty"
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
-                className="text-center py-20 bg-white rounded-3xl shadow-xl"
+                className="bg-white rounded-2xl border border-stone-200 shadow-sm p-12 text-center"
               >
-                <div className="inline-block p-6 bg-rose-50 rounded-2xl mb-6">
-                  <Search className="h-12 w-12 text-rose-500" />
-                </div>
-                <h3 className="text-2xl font-medium text-gray-700 mb-2">
-                  Search for a crop
-                </h3>
-                <p className="text-gray-500 max-w-md mx-auto">
-                  Enter the name of a crop to discover its health benefits and
-                  nutritional information.
+                <Search className="h-8 w-8 text-stone-300 mx-auto mb-3" />
+                <p className="text-stone-700 font-medium mb-1">Search for a crop</p>
+                <p className="text-stone-500 text-sm max-w-sm mx-auto">
+                  Type a crop name to see its nutrition profile and health benefits.
                 </p>
               </motion.div>
-            )}
+            ) : null}
           </AnimatePresence>
         </div>
 
-        {/* Sidebar Column - Always visible */}
-        <div className="space-y-8">
-          {/* Optimal Consumption Times */}
-          <motion.div
-            initial={{ opacity: 0, x: 20 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ delay: 0.4 }}
-            className="bg-white p-6 rounded-3xl shadow-xl border border-gray-100"
-          >
-            <h3 className="text-2xl font-bold text-rose-600 mb-4 flex items-center">
-              <Clock className="mr-2" size={24} />
-              Details of Consumption Times
+        {/* Sidebar — consumption times reference */}
+        <aside className="lg:col-span-1">
+          <div className="bg-white rounded-2xl border border-stone-200 shadow-sm p-6 sticky top-20">
+            <h3 className="flex items-center gap-2 text-xs uppercase tracking-[0.2em] text-stone-500 mb-4">
+              <Clock className="w-3.5 h-3.5" />
+              Consumption windows
             </h3>
-            <div className="space-y-4">
-              {timeSlots.map((slot, index) => (
-                <div
-                  key={index}
-                  className="border-l-4 border-rose-200 pl-4 py-1"
-                >
-                  <p className="font-semibold text-gray-800">{slot.period}</p>
-                  <p className="text-sm text-gray-600">{slot.time}</p>
-                  <p className="text-sm text-gray-500 mt-1">
-                    {slot.description}
-                  </p>
-                </div>
+            <ul className="space-y-3">
+              {TIME_SLOTS.map((s) => (
+                <li key={s.period} className="border-l-2 border-stone-200 pl-3">
+                  <p className="text-sm font-semibold text-stone-900">{s.period}</p>
+                  <p className="text-xs text-stone-500">{s.time}</p>
+                  <p className="text-xs text-stone-600 mt-0.5 leading-snug">{s.description}</p>
+                </li>
               ))}
-            </div>
-          </motion.div>
-
-          {/* Nutrition Standards */}
-          <motion.div
-            initial={{ opacity: 0, x: 20 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ delay: 0.5 }}
-            className="bg-white p-6 rounded-3xl shadow-xl border border-gray-100"
-          >
-            <h3 className="text-2xl font-bold text-amber-600 mb-4 flex items-center">
-              <Carrot className="mr-2" size={24} />
-              Nutrition Standards
-            </h3>
-            <p className="mb-4">
-              All nutritional values are provided per 100 grams of edible
-              portion, following:
-            </p>
-            <ul className="space-y-2 text-sm">
-              <li className="flex items-start">
-                <span className="text-green-500 mr-2">•</span>
-                <span>Indian standards (NIN, ICMR)</span>
-              </li>
-              <li className="flex items-start">
-                <span className="text-green-500 mr-2">•</span>
-                <span>USDA National Nutrient Database</span>
-              </li>
-              <li className="flex items-start">
-                <span className="text-green-500 mr-2">•</span>
-                <span>FAO Food Composition Tables</span>
-              </li>
             </ul>
-            <div className="mt-4 p-3 bg-green-50 rounded-lg border border-green-100">
-              <p className="text-sm text-green-700 italic">
-                &quot;Let food be thy medicine and medicine be thy food.&quot; -
-                Hippocrates
-              </p>
-            </div>
-          </motion.div>
-        </div>
+          </div>
+        </aside>
       </div>
+    </PageShell>
+  );
+}
+
+function Section({
+  title,
+  hint,
+  children,
+}: {
+  title: string;
+  hint?: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <div>
+      <div className="flex items-baseline justify-between mb-3">
+        <h3 className="text-xs uppercase tracking-[0.2em] text-stone-500">{title}</h3>
+        {hint && <span className="text-xs text-stone-400">{hint}</span>}
+      </div>
+      {children}
+    </div>
+  );
+}
+
+function Macro({ label, value, unit }: { label: string; value?: number; unit: string }) {
+  return (
+    <div className="bg-stone-50 border border-stone-200 rounded-xl p-3 text-center">
+      <p className="text-2xl font-bold text-stone-900">
+        {value ?? "—"}
+        <span className="text-sm text-stone-400 font-normal ml-0.5">{unit}</span>
+      </p>
+      <p className="text-[11px] uppercase tracking-wider text-stone-500 mt-0.5">{label}</p>
+    </div>
+  );
+}
+
+function Detail({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="bg-stone-50 border border-stone-200 rounded-xl px-4 py-3">
+      <p className="text-[11px] uppercase tracking-wider text-stone-500 mb-1">{label}</p>
+      <p className="text-stone-900 font-medium text-sm">{value}</p>
     </div>
   );
 }

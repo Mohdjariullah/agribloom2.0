@@ -2,13 +2,14 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 import ConditionalNavbar from "./ConditionalNavbar";
-import { Toaster } from "react-hot-toast"; // ✅ import this
+import { Toaster } from "react-hot-toast";
 import { LanguageProvider } from "@/contexts/LanguageContext";
-import { ChatWidget } from "@/components/ChatWidget";
+import ChatLauncher from "@/components/ChatLauncher";
 
 export const metadata: Metadata = {
-  title: "AgriBloom",
-  description: "Grow smart with AgriBloom",
+  title: "AgriBloom — Smart farming, made simple",
+  description:
+    "Crop guides, live mandi prices, weather, pest control and fertilizer schedules — built for Indian farmers.",
 };
 
 export default function RootLayout({
@@ -18,12 +19,12 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body className="bg-white text-black">
+      <body className="bg-white text-stone-900 antialiased">
         <LanguageProvider>
           <ConditionalNavbar />
-          <div className="min-h-screen bg-[#F1FAF1]">{children}</div>
-          <Toaster position="top-center" reverseOrder={false} /> {/* ✅ add this */}
-          <ChatWidget />
+          <div className="min-h-screen">{children}</div>
+          <Toaster position="top-center" reverseOrder={false} />
+          <ChatLauncher />
         </LanguageProvider>
       </body>
     </html>

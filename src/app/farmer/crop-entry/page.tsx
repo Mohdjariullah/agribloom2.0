@@ -2,51 +2,63 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { toast } from "react-hot-toast";
+import { PageHeader, PageShell } from "@/components/PageHeader";
+import { FormInput, FormLabel, FormSelect, PrimaryButton } from "@/components/AuthShell";
+
+type FormState = {
+  crop: string;
+  district: string;
+  village: string;
+  sowingDate: string;
+  area: string;
+  season: "kharif" | "rabi" | "zaid";
+};
 
 export default function CropEntryPage() {
   const router = useRouter();
-
-  const [form, setForm] = useState({
+  const [form, setForm] = useState<FormState>({
     crop: "",
     district: "",
     village: "",
     sowingDate: "",
-    area: 0,
+    area: "",
     season: "kharif",
   });
-
   const [userId, setUserId] = useState<string | null>(null);
+  const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
-    const fetchUser = async () => {
-      const res = await fetch("/api/users/me");
-      const data = await res.json();
-      if (res.ok && data.user?.id) {
-        setUserId(data.user.id);
-      }
-    };
-    fetchUser();
+    fetch("/api/users/me")
+      .then((r) => r.json())
+      .then((d) => {
+        if (d?.user?.id) setUserId(d.user.id);
+        // pre-fill district from profile if set
+        return fetch("/api/users/profile").then((r) => r.json());
+      })
+      .then((p) => {
+        if (p?.data?.district) {
+          setForm((f) => ({ ...f, district: p.data.district, village: p.data.village || "" }));
+        }
+      })
+      .catch(() => {});
   }, []);
 
-  const handleChange = (
+  const onChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
   ) => {
-    const { name, value } = e.target;
-    setForm((prev) => ({
-      ...prev,
-      [name]: name === "area" ? Number(value) : value,
-    }));
+    setForm((p) => ({ ...p, [e.target.name]: e.target.value }));
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-
     const { crop, district, village, sowingDate, area, season } = form;
-    if (!crop || !district || !village || !sowingDate || area <= 0 || !userId) {
-      alert("❌ Please fill all fields correctly.");
+    if (!crop || !district || !village || !sowingDate || !area || Number(area) <= 0 || !userId) {
+      toast.error("Please fill all fields with valid values.");
       return;
     }
 
+    setSubmitting(true);
     try {
       const res = await fetch("/api/farmer/crop-entry", {
         method: "POST",
@@ -56,98 +68,117 @@ export default function CropEntryPage() {
           district,
           village,
           sowingDate,
-          area,
+          area: Number(area),
           season,
           farmerId: userId,
         }),
       });
-
       const data = await res.json();
-
       if (!res.ok) {
-        alert("❌ " + (data.message || "Something went wrong"));
+        toast.error(data.message || "Couldn't save");
         return;
       }
-
-      alert("✅ Crop entry saved!");
-      setForm({
-        crop: "",
-        district: "",
-        village: "",
-        sowingDate: "",
-        area: 0,
-        season: "kharif",
-      });
-
-      router.push("/farmer/dashboard"); // Redirect after success
-    } catch (error) {
-      console.error("Submit error:", error);
-      alert("❌ Server error.");
+      toast.success("Crop entry saved");
+      router.push("/farmer/dashboard");
+    } catch (err) {
+      console.error("submit", err);
+      toast.error("Server error");
+    } finally {
+      setSubmitting(false);
     }
   };
 
   return (
-    <div className="pt-20 bg-green-50 min-h-screen">
+    <PageShell>
+      <PageHeader
+        eyebrow="My farm · Crop entry"
+        title="Log what you sowed."
+        subtitle="Help build trend data for your district. Takes 30 seconds."
+      />
+
       <form
-        onSubmit={handleSubmit}
-        className="bg-white p-6 rounded-lg shadow-md max-w-xl mx-auto"
+        onSubmit={onSubmit}
+        className="bg-white border border-stone-200 rounded-2xl shadow-sm p-6 sm:p-8 max-w-2xl space-y-5"
       >
-        <h2 className="text-xl font-bold mb-4">Enter Crop Details</h2>
+        <div>
+          <FormLabel htmlFor="crop">Crop name</FormLabel>
+          <FormInput
+            id="crop"
+            name="crop"
+            value={form.crop}
+            onChange={onChange}
+            placeholder="e.g. Tomato, Rice"
+            required
+          />
+        </div>
 
-        <input
-          name="crop"
-          placeholder="Crop Name"
-          value={form.crop}
-          onChange={handleChange}
-          className="w-full mb-3 p-2 border rounded"
-        />
-        <input
-          name="district"
-          placeholder="District"
-          value={form.district}
-          onChange={handleChange}
-          className="w-full mb-3 p-2 border rounded"
-        />
-        <input
-          name="village"
-          placeholder="Village"
-          value={form.village}
-          onChange={handleChange}
-          className="w-full mb-3 p-2 border rounded"
-        />
-        <input
-          type="date"
-          name="sowingDate"
-          value={form.sowingDate}
-          onChange={handleChange}
-          className="w-full mb-3 p-2 border rounded"
-        />
-        <input
-          type="number"
-          name="area"
-          placeholder="Area in acres"
-          value={form.area}
-          onChange={handleChange}
-          className="w-full mb-3 p-2 border rounded"
-        />
-        <select
-          name="season"
-          value={form.season}
-          onChange={handleChange}
-          className="w-full mb-4 p-2 border rounded"
-        >
-          <option value="kharif">Kharif</option>
-          <option value="rabi">Rabi</option>
-          <option value="zaid">Zaid</option>
-        </select>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <FormLabel htmlFor="district">District</FormLabel>
+            <FormInput
+              id="district"
+              name="district"
+              value={form.district}
+              onChange={onChange}
+              placeholder="e.g. Bengaluru Rural"
+              required
+            />
+          </div>
+          <div>
+            <FormLabel htmlFor="village">Village</FormLabel>
+            <FormInput
+              id="village"
+              name="village"
+              value={form.village}
+              onChange={onChange}
+              placeholder="e.g. Doddaballapur"
+              required
+            />
+          </div>
+        </div>
 
-        <button
-          type="submit"
-          className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700"
-        >
-          Submit
-        </button>
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <div>
+            <FormLabel htmlFor="sowingDate">Sowing date</FormLabel>
+            <FormInput
+              id="sowingDate"
+              name="sowingDate"
+              type="date"
+              value={form.sowingDate}
+              onChange={onChange}
+              required
+            />
+          </div>
+          <div>
+            <FormLabel htmlFor="area" hint="acres">
+              Area
+            </FormLabel>
+            <FormInput
+              id="area"
+              name="area"
+              type="number"
+              step="0.1"
+              min="0"
+              value={form.area}
+              onChange={onChange}
+              placeholder="e.g. 2.5"
+              required
+            />
+          </div>
+          <div>
+            <FormLabel htmlFor="season">Season</FormLabel>
+            <FormSelect id="season" name="season" value={form.season} onChange={onChange}>
+              <option value="kharif">Kharif (monsoon)</option>
+              <option value="rabi">Rabi (winter)</option>
+              <option value="zaid">Zaid (summer)</option>
+            </FormSelect>
+          </div>
+        </div>
+
+        <PrimaryButton type="submit" disabled={submitting} className="mt-2">
+          {submitting ? "Saving…" : "Save crop entry"}
+        </PrimaryButton>
       </form>
-    </div>
+    </PageShell>
   );
 }

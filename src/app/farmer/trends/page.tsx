@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { PageHeader, PageShell } from "@/components/PageHeader";
 
 interface Trend {
   crop: string;
@@ -9,7 +10,7 @@ interface Trend {
   averageArea: number;
   percentage: number;
   district: string;
-  village: string;
+  village?: string;
 }
 
 export default function TrendsPage() {
@@ -17,48 +18,73 @@ export default function TrendsPage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const fetchTrends = async () => {
-      try {
-        const res = await fetch("/api/farmer/trends");
-        const data = await res.json();
-        setTrends(data);
-      } catch (err) {
-        console.error("Failed to load trends:", err);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchTrends();
+    fetch("/api/farmer/trends")
+      .then((r) => r.json())
+      .then((d) => setTrends(Array.isArray(d) ? d : []))
+      .catch(() => setTrends([]))
+      .finally(() => setLoading(false));
   }, []);
 
+  const districtLabel = trends[0]?.district;
+
   return (
-    <div className="p-6">
-      <h1 className="text-2xl font-semibold mb-4 text-green-800">
-        Crop Sowing Trends
-      </h1>
+    <PageShell>
+      <PageHeader
+        eyebrow="My farm · Trends"
+        title={districtLabel ? `What's being sown in ${districtLabel}` : "Crop sowing trends"}
+        subtitle="Aggregated from every farmer who's logged a crop in your district. Use this to spot oversaturated crops and plan rotation."
+      />
+
       {loading ? (
-        <p className="text-gray-500">Loading trends...</p>
+        <p className="text-stone-500 text-sm">Loading trends…</p>
       ) : trends.length === 0 ? (
-        <p className="text-gray-600">No trends data available.</p>
+        <div className="bg-white border border-stone-200 rounded-2xl p-10 text-center max-w-xl">
+          <p className="text-stone-700 font-medium mb-1">Not enough data yet</p>
+          <p className="text-sm text-stone-500">
+            No farmers in your area have logged crops yet. You can be the first — go to{" "}
+            <a href="/farmer/crop-entry" className="text-stone-900 underline">
+              Log a crop
+            </a>
+            .
+          </p>
+        </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {trends.map((trend, index) => (
+          {trends.map((t, i) => (
             <div
-              key={index}
-              className="border rounded-xl shadow p-4 bg-green-50 hover:bg-green-100 transition"
+              key={i}
+              className="bg-white border border-stone-200 rounded-2xl p-5 hover:border-stone-300 hover:shadow-sm transition-all"
             >
-              <h2 className="text-lg font-bold capitalize">{trend.crop}</h2>
-              <p>District: <strong>{trend.district}</strong></p>
-              <p>Village: <strong>{trend.village}</strong></p>
-              <p>Total Entries: {trend.totalEntries}</p>
-              <p>Total Area: {trend.totalArea.toFixed(2)} acres</p>
-              <p>Average Area: {trend.averageArea.toFixed(2)} acres</p>
-              <p>Contribution: {trend.percentage.toFixed(2)}% of total area</p>
+              <div className="flex items-baseline justify-between mb-1">
+                <h3 className="text-base font-semibold text-stone-900 capitalize">{t.crop}</h3>
+                <span className="text-stone-900 font-semibold text-sm">
+                  {t.percentage.toFixed(1)}%
+                </span>
+              </div>
+              <div className="h-1.5 bg-stone-100 rounded-full overflow-hidden mb-4">
+                <div
+                  className="h-full bg-stone-700"
+                  style={{ width: `${Math.min(100, t.percentage)}%` }}
+                />
+              </div>
+              <ul className="space-y-1.5 text-sm text-stone-600">
+                <Row label="Entries" value={t.totalEntries.toString()} />
+                <Row label="Total area" value={`${t.totalArea.toFixed(1)} acres`} />
+                <Row label="Avg per farm" value={`${t.averageArea.toFixed(1)} acres`} />
+              </ul>
             </div>
           ))}
         </div>
       )}
-    </div>
+    </PageShell>
+  );
+}
+
+function Row({ label, value }: { label: string; value: string }) {
+  return (
+    <li className="flex items-center justify-between">
+      <span className="text-stone-500">{label}</span>
+      <span className="text-stone-900 font-medium">{value}</span>
+    </li>
   );
 }
