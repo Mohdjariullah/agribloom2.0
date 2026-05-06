@@ -58,16 +58,16 @@ function loadSampleData(): MandiPriceRecord[] {
 }
 
 export async function getMandiPrices(
-  commodity?: string, 
-  state?: string, 
+  commodity?: string,
+  state?: string,
   district?: string
 ): Promise<{
-  prices: any[];
+  prices: unknown[];
   commodity: string;
   state: string;
   district: string;
   message: string;
-  suggestions?: any;
+  suggestions?: Record<string, unknown>;
 }> {
   try {
     const allData = await loadMandiCSVData();

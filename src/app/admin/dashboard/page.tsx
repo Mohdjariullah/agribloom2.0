@@ -15,6 +15,7 @@ import {
   RefreshCw,
   ShieldCheck,
 } from "lucide-react";
+import { T } from "@/components/T";
 
 type Stats = {
   users: {
@@ -76,13 +77,13 @@ export default function AdminDashboardPage() {
         <div className="flex items-start justify-between gap-4 mb-8">
           <div>
             <p className="text-xs uppercase tracking-[0.2em] text-stone-500 mb-2">
-              Admin · Dashboard
+              <T>Admin · Dashboard</T>
             </p>
             <h1 className="text-3xl sm:text-4xl font-semibold tracking-tight text-stone-900">
-              Overview
+              <T>Overview</T>
             </h1>
             <p className="text-stone-600 text-sm mt-1">
-              How AgriBloom is being used right now.
+              <T>How AgriBloom is being used right now.</T>
             </p>
           </div>
           <button
@@ -91,7 +92,7 @@ export default function AdminDashboardPage() {
             className="flex-shrink-0 inline-flex items-center gap-2 bg-stone-900 hover:bg-stone-800 disabled:opacity-60 text-white text-sm font-medium px-4 py-2 rounded-full transition-colors"
           >
             <RefreshCw className={`w-3.5 h-3.5 ${loading ? "animate-spin" : ""}`} />
-            Refresh
+            <T>Refresh</T>
           </button>
         </div>
 
@@ -153,7 +154,7 @@ export default function AdminDashboardPage() {
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-8">
               <div className="lg:col-span-2 bg-white border border-stone-200 rounded-2xl shadow-sm p-5 sm:p-6">
                 <h2 className="text-xs uppercase tracking-[0.15em] text-stone-500 mb-4">
-                  Recent farmer signups
+                  <T>Recent farmer signups</T>
                 </h2>
                 {data.recentFarmers.length === 0 ? (
                   <p className="text-stone-500 text-sm py-6 text-center">
@@ -194,7 +195,7 @@ export default function AdminDashboardPage() {
 
               <div className="bg-white border border-stone-200 rounded-2xl shadow-sm p-5 sm:p-6">
                 <h2 className="text-xs uppercase tracking-[0.15em] text-stone-500 mb-4">
-                  Top states
+                  <T>Top states</T>
                 </h2>
                 {data.topStates.length === 0 ? (
                   <p className="text-stone-500 text-sm py-6 text-center">
@@ -278,7 +279,7 @@ function Stat({
     <div className="bg-white border border-stone-200 rounded-xl p-4 sm:p-5">
       <div className="flex items-center gap-2 text-xs uppercase tracking-wider text-stone-500 mb-2">
         {icon}
-        {label}
+        <T>{label}</T>
       </div>
       <p className="text-2xl sm:text-3xl font-bold text-stone-900 mb-1">{value}</p>
       {typeof progress === "number" && (
@@ -315,7 +316,7 @@ function Mini({
         <ArrowUpRight className="w-3 h-3 text-stone-300 group-hover:text-stone-900 transition-colors" />
       </div>
       <p className="text-xl font-bold text-stone-900">{value}</p>
-      <p className="text-[11px] uppercase tracking-wider text-stone-500">{label}</p>
+      <p className="text-[11px] uppercase tracking-wider text-stone-500"><T>{label}</T></p>
     </Link>
   );
 }
@@ -341,10 +342,10 @@ function ActionCard({
       </span>
       <div className="min-w-0 flex-1">
         <p className="font-semibold text-stone-900 mb-0.5 flex items-center gap-1.5">
-          {title}
+          <T>{title}</T>
           <ArrowUpRight className="w-3 h-3 text-stone-400 group-hover:text-stone-900 group-hover:-translate-y-0.5 group-hover:translate-x-0.5 transition-all" />
         </p>
-        <p className="text-xs text-stone-500 leading-snug">{desc}</p>
+        <p className="text-xs text-stone-500 leading-snug"><T>{desc}</T></p>
       </div>
     </Link>
   );

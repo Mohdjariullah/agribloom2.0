@@ -4,6 +4,7 @@ import Link from "next/link";
 import { Mail, MapPin, Globe } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useTranslation } from "@/hooks/useTranslation";
+import { T } from "@/components/T";
 
 const LANGUAGES = [
   { code: "en", name: "English" },
@@ -32,36 +33,35 @@ export default function Footer() {
             {t("footer.agribloom") || "AgriBloom"}
           </h2>
           <p className="text-sm leading-relaxed text-stone-600">
-            Practical farming tools for Indian growers — crop info, market rates,
-            weather and pest guidance, in one place.
+            <T>Practical farming tools for Indian growers — crop info, market rates, weather and pest guidance, in one place.</T>
           </p>
         </div>
 
         {/* Explore */}
         <div>
           <h3 className="text-sm font-semibold text-stone-900 mb-4 uppercase tracking-wider">
-            Explore
+            <T>Explore</T>
           </h3>
           <ul className="space-y-2.5 text-sm">
-            <li><FooterLink href="/agrilens">Crops</FooterLink></li>
-            <li><FooterLink href="/insect">Pests &amp; diseases</FooterLink></li>
-            <li><FooterLink href="/fertilizer">Fertilizer</FooterLink></li>
-            <li><FooterLink href="/mandi-prices">Mandi prices</FooterLink></li>
-            <li><FooterLink href="/weather">Weather</FooterLink></li>
-            <li><FooterLink href="/schemes">Govt schemes</FooterLink></li>
+            <li><FooterLink href="/agrilens"><T>Crops</T></FooterLink></li>
+            <li><FooterLink href="/insect"><T>Pests &amp; diseases</T></FooterLink></li>
+            <li><FooterLink href="/fertilizer"><T>Fertilizer</T></FooterLink></li>
+            <li><FooterLink href="/mandi-prices"><T>Mandi prices</T></FooterLink></li>
+            <li><FooterLink href="/weather"><T>Weather</T></FooterLink></li>
+            <li><FooterLink href="/schemes"><T>Govt schemes</T></FooterLink></li>
           </ul>
         </div>
 
         {/* Sources */}
         <div>
           <h3 className="text-sm font-semibold text-stone-900 mb-4 uppercase tracking-wider">
-            Data sources
+            <T>Data sources</T>
           </h3>
           <ul className="space-y-2.5 text-sm text-stone-600">
             <li>data.gov.in (AGMARKNET)</li>
             <li>OpenWeatherMap</li>
             <li>ICAR &amp; Krishi Vigyan Kendras</li>
-            <li>State agriculture universities</li>
+            <li><T>State agriculture universities</T></li>
           </ul>
         </div>
 
@@ -69,7 +69,7 @@ export default function Footer() {
         <div>
           <h3 className="text-sm font-semibold text-stone-900 mb-4 uppercase tracking-wider flex items-center gap-2">
             <Globe className="w-4 h-4" />
-            Language
+            <T>Language</T>
           </h3>
           <div className="grid grid-cols-2 gap-1.5 mb-6">
             {LANGUAGES.map((lang) => (
@@ -87,7 +87,7 @@ export default function Footer() {
             ))}
           </div>
           <h3 className="text-sm font-semibold text-stone-900 mb-3 uppercase tracking-wider">
-            Contact
+            <T>Contact</T>
           </h3>
           <div className="space-y-2 text-sm text-stone-600">
             <a href="mailto:hello@agribloom.in" className="flex items-center gap-2 hover:text-green-700 transition-colors">

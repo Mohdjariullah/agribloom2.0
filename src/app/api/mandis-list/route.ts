@@ -1,7 +1,17 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import { getMandiMetadata } from '@/lib/csvDataLoader';
 
-export async function GET(request: NextRequest) {
+type AgmarknetRecord = {
+  state?: string;
+  district?: string;
+  commodity?: string;
+  market?: string;
+  market_name?: string;
+};
+
+type MandiSummary = { market: string; district: string; state: string };
+
+export async function GET() {
   try {
     console.log('Fetching mandis metadata...');
     
@@ -82,56 +92,46 @@ async function tryGovernmentMandisAPI() {
     };
   }
 
+  const records: AgmarknetRecord[] = data.records ?? [];
+
   // Extract unique values
-  const uniqueStates = [...new Set(data.records.map((r: any) => r.state).filter(Boolean))].sort();
-  const uniqueDistricts = [...new Set(data.records.map((r: any) => r.district).filter(Boolean))].sort();
-  const uniqueCommodities = [...new Set(data.records.map((r: any) => r.commodity).filter(Boolean))].sort();
-  const uniqueMarkets = [...new Set(data.records.map((r: any) => r.market || r.market_name).filter(Boolean))].sort();
-  
+  const uniqueStates = [...new Set(records.map((r) => r.state).filter(Boolean) as string[])].sort();
+  const uniqueDistricts = [...new Set(records.map((r) => r.district).filter(Boolean) as string[])].sort();
+  const uniqueCommodities = [...new Set(records.map((r) => r.commodity).filter(Boolean) as string[])].sort();
+  const uniqueMarkets = [
+    ...new Set(records.map((r) => r.market || r.market_name).filter(Boolean) as string[]),
+  ].sort();
+
   // Group mandis by state and district
-  const mandisByState: { [key: string]: any[] } = {};
-  const mandisByDistrict: { [key: string]: any[] } = {};
-  
-  data.records.forEach((record: any) => {
-    const state = record.state;
-    const district = record.district;
-    
-    if (!mandisByState[state]) {
-      mandisByState[state] = [];
+  const mandisByState: { [key: string]: MandiSummary[] } = {};
+  const mandisByDistrict: { [key: string]: MandiSummary[] } = {};
+
+  for (const record of records) {
+    const state = record.state ?? "";
+    const district = record.district ?? "";
+    const market = record.market ?? record.market_name ?? "";
+    if (!state || !district || !market) continue;
+
+    if (!mandisByState[state]) mandisByState[state] = [];
+    if (!mandisByDistrict[district]) mandisByDistrict[district] = [];
+
+    if (!mandisByState[state].some((m) => m.market === market)) {
+      mandisByState[state].push({ market, district, state });
     }
-    if (!mandisByDistrict[district]) {
-      mandisByDistrict[district] = [];
+    if (!mandisByDistrict[district].some((m) => m.market === market)) {
+      mandisByDistrict[district].push({ market, district, state });
     }
-    
-    // Add unique markets
-    const existingMarket = mandisByState[state].find(m => m.market === record.market);
-    if (!existingMarket) {
-      mandisByState[state].push({
-        market: record.market,
-        district: record.district,
-        state: record.state
-      });
-    }
-    
-    const existingDistrictMarket = mandisByDistrict[district].find(m => m.market === record.market);
-    if (!existingDistrictMarket) {
-      mandisByDistrict[district].push({
-        market: record.market,
-        district: record.district,
-        state: record.state
-      });
-    }
-  });
+  }
 
   return {
-    mandis: data.records,
+    mandis: records,
     states: uniqueStates,
     districts: uniqueDistricts,
     commodities: uniqueCommodities,
     markets: uniqueMarkets,
     mandisByState,
     mandisByDistrict,
-    totalRecords: data.records.length,
+    totalRecords: records.length,
     message: `Found ${uniqueStates.length} states, ${uniqueDistricts.length} districts, and ${uniqueCommodities.length} commodities (Government API)`
   };
 }

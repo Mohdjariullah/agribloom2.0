@@ -1,11 +1,12 @@
 "use client";
 
-import React, { useEffect, useState, Suspense } from "react";
+import React, { useState, Suspense } from "react";
 import Link from "next/link";
 import axios from "axios";
 import { toast } from "react-hot-toast";
 import { useRouter, useSearchParams } from "next/navigation";
 import AuthShell, { FormInput, FormLabel, PrimaryButton } from "@/components/AuthShell";
+import { T } from "@/components/T";
 
 function LoginForm() {
   const router = useRouter();
@@ -87,7 +88,7 @@ function LoginForm() {
       </div>
 
       <PrimaryButton type="submit" disabled={buttonDisabled} className="mt-2">
-        {loading ? "Signing in…" : "Sign in"}
+        <T>{loading ? "Signing in…" : "Sign in"}</T>
       </PrimaryButton>
     </form>
   );
@@ -100,9 +101,9 @@ export default function LoginPage() {
       subtitle="Sign in to access your crops, prices and saved district."
       footer={
         <>
-          New to AgriBloom?{" "}
+          <T>New to AgriBloom?</T>{" "}
           <Link href="/signup" className="text-stone-900 font-medium hover:underline">
-            Create an account
+            <T>Create an account</T>
           </Link>
         </>
       }

@@ -1,217 +1,275 @@
 import Link from "next/link";
 import {
-  ArrowUpRight,
-  Sprout,
+  ArrowRight,
   ShoppingCart,
   Cloud,
-  Bug,
-  FlaskConical,
-  Leaf,
   FileText,
 } from "lucide-react";
 import Footer from "@/components/Footer";
 import { ChatWidget } from "@/components/ChatWidget";
+import { T } from "@/components/T";
+import { TopUtilityStrip } from "@/components/landing/TopUtilityStrip";
+import { TrustStrip } from "@/components/landing/TrustStrip";
+import { MobileCTABar } from "@/components/landing/MobileCTABar";
+import { HeroPreview } from "@/components/landing/HeroPreview";
 
 export default function Home() {
   return (
-    <main className="bg-[#fafaf7] text-stone-900">
-      <Hero />
-      <Modules />
-      <Trust />
-      <Closing />
-      <Footer />
-      <ChatWidget />
-    </main>
+    <>
+      <TopUtilityStrip />
+      <main className="bg-[#F7FAF5] text-stone-800 pb-24 sm:pb-0">
+        <Hero />
+        <TrustStrip />
+        <Actions />
+        <Principles />
+        <Closing />
+        <Footer />
+        <ChatWidget />
+      </main>
+      <MobileCTABar />
+    </>
   );
 }
 
+/* ────────────────────────────────────────────────────────────────────
+ * HERO — split layout. Copy + CTAs on the left, real product preview
+ * card on the right. The card IS the hero illustration.
+ * ──────────────────────────────────────────────────────────────────── */
 function Hero() {
   return (
-    <section className="border-b border-stone-200">
-      <div className="max-w-5xl mx-auto px-6 sm:px-8 pt-20 sm:pt-28 pb-16 sm:pb-24">
-        <p className="text-sm uppercase tracking-[0.2em] text-stone-500 mb-6">
-          AgriBloom
-        </p>
-        <h1 className="text-4xl sm:text-5xl lg:text-6xl font-semibold tracking-tight leading-[1.1] mb-6 max-w-3xl">
-          Practical farming tools,
-          <br className="hidden sm:block" />
-          <span className="text-stone-500"> in one place.</span>
-        </h1>
-        <p className="text-lg sm:text-xl text-stone-600 leading-relaxed max-w-2xl mb-10">
-          Crop guides, mandi rates, weather and pest control — drawn from
-          government data and ICAR research. No fluff.
-        </p>
-        <div className="flex flex-col sm:flex-row gap-3 sm:items-center">
-          <Link
-            href="/signup"
-            className="inline-flex items-center justify-center gap-2 bg-stone-900 hover:bg-stone-800 text-white font-medium px-6 py-3.5 rounded-full transition-colors"
-          >
-            Create an account
-          </Link>
-          <Link
-            href="/mandi-prices"
-            className="inline-flex items-center justify-center gap-1.5 text-stone-700 hover:text-stone-900 font-medium px-3 py-3.5 transition-colors"
-          >
-            Browse the tools
-            <ArrowUpRight className="h-4 w-4" />
-          </Link>
+    <section className="relative overflow-hidden">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-12 sm:pt-16 lg:pt-24 pb-16 sm:pb-24">
+        <div className="grid lg:grid-cols-12 gap-12 lg:gap-16 items-center">
+          {/* Left — copy */}
+          <div className="lg:col-span-7">
+            <p className="text-xs sm:text-sm uppercase tracking-[0.28em] text-green-800 font-semibold mb-6">
+              AgriBloom
+            </p>
+
+            <h1 className="text-[40px] sm:text-[56px] lg:text-[68px] font-semibold tracking-tight text-stone-900 leading-[1.05] mb-6">
+              <T>Practical farming tools,</T>
+              <br />
+              <span className="text-green-700">
+                <T>in one place.</T>
+              </span>
+            </h1>
+
+            <p className="text-lg sm:text-xl text-stone-700 leading-relaxed max-w-xl mb-8">
+              <T>
+                Crop guides, mandi rates, weather, pest control and government
+                schemes — drawn from official data. Built for Indian farmers.
+              </T>
+            </p>
+
+            <div className="flex flex-col sm:flex-row gap-3 sm:items-center mb-8">
+              <Link
+                href="/signup"
+                className="inline-flex items-center justify-center bg-green-700 hover:bg-green-800 text-white font-semibold text-[15px] px-7 py-4 rounded-full transition-colors shadow-sm"
+              >
+                <T>Create free account</T>
+              </Link>
+              <Link
+                href="/mandi-prices"
+                className="inline-flex items-center justify-center gap-1 text-stone-800 hover:text-stone-900 font-semibold text-[15px] px-3 py-4 transition-colors group"
+              >
+                <T>Browse mandi prices</T>
+                <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
+              </Link>
+            </div>
+
+            <p className="text-sm text-stone-500">
+              <span lang="hi" className="text-stone-700">हिंदी</span>
+              <span className="mx-1.5 text-stone-300">·</span>
+              <span lang="ta" className="text-stone-700">தமிழ்</span>
+              <span className="mx-1.5 text-stone-300">·</span>
+              <span lang="kn" className="text-stone-700">ಕನ್ನಡ</span>
+              <span className="mx-1.5 text-stone-300">·</span>
+              <T>and 7 more</T>
+            </p>
+          </div>
+
+          {/* Right — product preview */}
+          <div className="lg:col-span-5 lg:pl-4">
+            <HeroPreview />
+          </div>
         </div>
       </div>
+
+      {/* Soft horizon line */}
+      <div
+        aria-hidden
+        className="pointer-events-none absolute inset-x-0 bottom-0 h-px bg-gradient-to-r from-transparent via-green-200 to-transparent"
+      />
     </section>
   );
 }
 
-function Modules() {
-  const modules = [
+/* ────────────────────────────────────────────────────────────────────
+ * ACTIONS — three big verb-led blocks. Each one a real entry point.
+ * ──────────────────────────────────────────────────────────────────── */
+function Actions() {
+  const blocks = [
     {
-      icon: <Sprout className="h-5 w-5" />,
-      title: "Crop guides",
-      desc: "200+ Indian crops with seasons, soil, and water needs.",
-      href: "/agrilens",
-    },
-    {
-      icon: <ShoppingCart className="h-5 w-5" />,
-      title: "Mandi prices",
-      desc: "Today’s wholesale rates with a 7-day trend per commodity.",
+      eyebrow: "What's it worth?",
+      title: "Check today's mandi rate",
+      desc: "Wholesale prices from 3,000+ markets, with a 7-day trend so you can pick the right day to sell.",
       href: "/mandi-prices",
+      cta: "Browse prices",
+      icon: ShoppingCart,
     },
     {
-      icon: <Cloud className="h-5 w-5" />,
-      title: "Weather",
-      desc: "5-day forecast with alerts tied to crops in your district.",
+      eyebrow: "What's the weather?",
+      title: "5-day forecast for your district",
+      desc: "Tied to crops you've sown — heavy rain warnings, frost risk, ideal sowing windows.",
       href: "/weather",
+      cta: "Open weather",
+      icon: Cloud,
     },
     {
-      icon: <Bug className="h-5 w-5" />,
-      title: "Pest & disease",
-      desc: "Search by crop, see symptoms and prevention steps.",
-      href: "/insect",
-    },
-    {
-      icon: <FlaskConical className="h-5 w-5" />,
-      title: "Fertilizer",
-      desc: "NPK targets and dose schedules per crop.",
-      href: "/fertilizer",
-    },
-    {
-      icon: <FileText className="h-5 w-5" />,
-      title: "Govt schemes",
-      desc: "30+ subsidies, insurance and credit programmes for farmers.",
+      eyebrow: "What can I claim?",
+      title: "Find your government scheme",
+      desc: "30+ subsidies, insurance and credit programmes. Filter by state, eligibility and crop.",
       href: "/schemes",
-    },
-    {
-      icon: <Leaf className="h-5 w-5" />,
-      title: "Soil & techniques",
-      desc: "Soil-type primer and farming method overviews.",
-      href: "/soil",
+      cta: "Browse schemes",
+      icon: FileText,
     },
   ];
   return (
-    <section className="border-b border-stone-200">
-      <div className="max-w-5xl mx-auto px-6 sm:px-8 py-16 sm:py-24">
-        <div className="mb-12 sm:mb-16">
-          <p className="text-sm uppercase tracking-[0.2em] text-stone-500 mb-4">
-            What’s inside
+    <section className="bg-white border-y border-stone-200">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 sm:py-24">
+        <div className="max-w-2xl mb-10 sm:mb-14">
+          <p className="text-xs uppercase tracking-[0.22em] text-green-800 font-semibold mb-3">
+            <T>Three things you&apos;ll do most</T>
           </p>
-          <h2 className="text-3xl sm:text-4xl font-semibold tracking-tight max-w-2xl">
-            Six tools, all using the same trusted sources.
+          <h2 className="text-3xl sm:text-4xl font-semibold tracking-tight text-stone-900">
+            <T>Built around the questions you ask every day.</T>
           </h2>
         </div>
 
-        <div className="grid sm:grid-cols-2 gap-x-10 gap-y-2 divide-y divide-stone-200 sm:divide-y-0">
-          {modules.map((m, i) => (
-            <Link
-              key={m.title}
-              href={m.href}
-              className={`group flex items-start gap-4 py-5 sm:py-6 ${
-                i % 2 === 0 ? "sm:pr-8" : "sm:pl-8"
-              } sm:border-b sm:border-stone-200`}
-            >
-              <span className="flex-shrink-0 mt-0.5 text-stone-700 group-hover:text-green-700 transition-colors">
-                {m.icon}
-              </span>
-              <div className="flex-1 min-w-0">
-                <h3 className="text-base font-semibold text-stone-900 mb-1 flex items-center gap-1.5">
-                  {m.title}
-                  <ArrowUpRight className="h-3.5 w-3.5 text-stone-400 group-hover:text-green-700 group-hover:-translate-y-0.5 group-hover:translate-x-0.5 transition-all" />
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          {blocks.map((b) => {
+            const Icon = b.icon;
+            return (
+              <Link
+                key={b.title}
+                href={b.href}
+                className="group flex flex-col p-7 bg-[#F7FAF5] hover:bg-green-50 border border-stone-200 hover:border-green-300 rounded-2xl transition-colors"
+              >
+                <Icon className="w-7 h-7 text-green-700 mb-7" strokeWidth={1.6} />
+                <p className="text-xs uppercase tracking-[0.18em] text-stone-500 mb-2 font-semibold">
+                  <T>{b.eyebrow}</T>
+                </p>
+                <h3 className="text-xl font-semibold text-stone-900 mb-3 leading-snug">
+                  <T>{b.title}</T>
                 </h3>
-                <p className="text-sm text-stone-600 leading-relaxed">{m.desc}</p>
-              </div>
-            </Link>
-          ))}
+                <p className="text-stone-600 text-[15px] leading-relaxed mb-6 flex-1">
+                  <T>{b.desc}</T>
+                </p>
+                <span className="text-sm font-semibold text-green-800 inline-flex items-center gap-1">
+                  <T>{b.cta}</T>
+                  <ArrowRight className="w-3.5 h-3.5 transition-transform group-hover:translate-x-0.5" />
+                </span>
+              </Link>
+            );
+          })}
         </div>
       </div>
     </section>
   );
 }
 
-function Trust() {
+/* ────────────────────────────────────────────────────────────────────
+ * PRINCIPLES — three things this product believes in.
+ * ──────────────────────────────────────────────────────────────────── */
+function Principles() {
   const points = [
     {
       title: "Government & research data only",
       body:
-        "Mandi prices come from data.gov.in (AGMARKNET). Weather is OpenWeatherMap. Crop and fertilizer guidance is drawn from ICAR and Krishi Vigyan Kendra publications.",
+        "Mandi prices come from data.gov.in (AGMARKNET). Weather from OpenWeatherMap. Crop, pest and fertilizer guidance is drawn from ICAR and Krishi Vigyan Kendra publications.",
     },
     {
-      title: "Built for the way farmers actually work",
+      title: "Built for the way you actually work",
       body:
-        "Mobile-first, low-bandwidth, in your language. Pick a state and crop and get straight to the answer — no carousels, no clutter.",
+        "Mobile-first, low-bandwidth, in your language. Pick a state and crop, get straight to the answer. No clutter, no jargon, no carousels.",
     },
     {
-      title: "Free to use",
+      title: "Free, forever",
       body:
-        "Sign up to save your district and crops for personalized prices and weather. Or browse without an account.",
+        "Sign up to save your district and crops for personalized prices and weather — or browse without an account. No email needed to read.",
     },
   ];
-
   return (
-    <section className="border-b border-stone-200 bg-white">
-      <div className="max-w-5xl mx-auto px-6 sm:px-8 py-16 sm:py-24">
-        <div className="mb-12 sm:mb-16">
-          <p className="text-sm uppercase tracking-[0.2em] text-stone-500 mb-4">
-            Why AgriBloom
+    <section className="py-16 sm:py-24">
+      <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="max-w-2xl mb-12 sm:mb-16">
+          <p className="text-xs uppercase tracking-[0.22em] text-green-800 font-semibold mb-3">
+            <T>Why we exist</T>
           </p>
-          <h2 className="text-3xl sm:text-4xl font-semibold tracking-tight max-w-2xl">
-            Honest data. Plain language. Nothing made up.
+          <h2 className="text-3xl sm:text-4xl font-semibold tracking-tight text-stone-900">
+            <T>Honest data. Plain language. Nothing made up.</T>
           </h2>
         </div>
-        <div className="space-y-10 max-w-3xl">
-          {points.map((p) => (
-            <div key={p.title}>
-              <h3 className="text-lg font-semibold text-stone-900 mb-2">{p.title}</h3>
-              <p className="text-stone-600 leading-relaxed">{p.body}</p>
+
+        <dl className="space-y-10 sm:space-y-12 max-w-3xl">
+          {points.map((p, i) => (
+            <div key={p.title} className="grid grid-cols-[2rem_1fr] gap-4 sm:gap-6">
+              <span className="text-3xl font-semibold text-green-700/70 tabular-nums leading-none pt-1">
+                0{i + 1}
+              </span>
+              <div>
+                <dt className="text-xl sm:text-2xl font-semibold text-stone-900 mb-2 leading-snug">
+                  <T>{p.title}</T>
+                </dt>
+                <dd className="text-stone-600 text-[16px] sm:text-[17px] leading-relaxed">
+                  <T>{p.body}</T>
+                </dd>
+              </div>
             </div>
           ))}
-        </div>
+        </dl>
       </div>
     </section>
   );
 }
 
+/* ────────────────────────────────────────────────────────────────────
+ * CLOSING — dark, confident.
+ * ──────────────────────────────────────────────────────────────────── */
 function Closing() {
   return (
-    <section className="bg-[#fafaf7]">
-      <div className="max-w-5xl mx-auto px-6 sm:px-8 py-20 sm:py-28">
-        <div className="max-w-2xl">
-          <h2 className="text-3xl sm:text-4xl font-semibold tracking-tight mb-5">
-            Ready when you are.
-          </h2>
-          <p className="text-stone-600 leading-relaxed mb-8">
-            Create an account to save your state, district and crops. We’ll show prices and
-            weather tailored to where you farm.
+    <section className="border-t border-stone-200 bg-stone-900 text-stone-100">
+      <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-20 sm:py-28">
+        <div className="max-w-3xl">
+          <p className="text-xs uppercase tracking-[0.22em] text-green-400 font-semibold mb-4">
+            <T>Get started</T>
           </p>
-          <div className="flex flex-col sm:flex-row gap-3">
+          <h2 className="text-3xl sm:text-5xl font-semibold tracking-tight text-white leading-[1.05] mb-6">
+            <T>Start with one decision:</T>
+            <br />
+            <span className="text-green-400">
+              <T>what&apos;s your crop selling for today?</T>
+            </span>
+          </h2>
+          <p className="text-stone-300 text-lg leading-relaxed mb-9 max-w-2xl">
+            <T>
+              Free to use. No email required to read prices and weather.
+              Sign up only when you want personalized alerts.
+            </T>
+          </p>
+          <div className="flex flex-col sm:flex-row gap-3 sm:items-center">
             <Link
-              href="/signup"
-              className="inline-flex items-center justify-center bg-stone-900 hover:bg-stone-800 text-white font-medium px-6 py-3.5 rounded-full transition-colors"
+              href="/mandi-prices"
+              className="inline-flex items-center justify-center bg-white hover:bg-stone-100 text-stone-900 font-semibold px-7 py-4 rounded-full transition-colors"
             >
-              Create your free account
+              <T>Open today&apos;s prices</T>
             </Link>
             <Link
-              href="/login"
-              className="inline-flex items-center justify-center text-stone-700 hover:text-stone-900 font-medium px-3 py-3.5 transition-colors"
+              href="/signup"
+              className="inline-flex items-center justify-center gap-1 text-stone-200 hover:text-white font-semibold px-3 py-4 transition-colors group"
             >
-              I already have one
+              <T>Or create an account</T>
+              <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-0.5" />
             </Link>
           </div>
         </div>

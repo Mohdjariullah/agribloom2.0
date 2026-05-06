@@ -11,6 +11,7 @@ import AuthShell, {
   FormSelect,
   PrimaryButton,
 } from "@/components/AuthShell";
+import { T } from "@/components/T";
 
 export default function SignupPage() {
   const router = useRouter();
@@ -69,9 +70,9 @@ export default function SignupPage() {
       subtitle="Free forever. Save your state and crops to get personalized insights."
       footer={
         <>
-          Already have an account?{" "}
+          <T>Already have an account?</T>{" "}
           <Link href="/login" className="text-stone-900 font-medium hover:underline">
-            Sign in
+            <T>Sign in</T>
           </Link>
         </>
       }
@@ -148,11 +149,11 @@ export default function SignupPage() {
         )}
 
         <PrimaryButton type="submit" disabled={buttonDisabled} className="mt-2">
-          {loading ? "Creating account…" : "Create account"}
+          {loading ? <T>Creating account…</T> : <T>Create account</T>}
         </PrimaryButton>
 
         <p className="text-xs text-stone-500 text-center pt-1">
-          By signing up you agree to receive farming alerts and tips.
+          <T>By signing up you agree to receive farming alerts and tips.</T>
         </p>
       </form>
     </AuthShell>

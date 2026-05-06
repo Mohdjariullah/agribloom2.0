@@ -1,82 +1,65 @@
 "use client";
 import { useLanguage } from "@/contexts/LanguageContext";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import translations from "@/data/translations.json";
 
-type TranslationKey = keyof typeof translations.en;
+type TranslationDict = Record<string, Record<string, unknown>>;
+
+const dict = translations as unknown as TranslationDict;
+
+function readDottedKey(obj: unknown, path: string[]): string | undefined {
+  let cur: unknown = obj;
+  for (const k of path) {
+    if (cur && typeof cur === "object" && k in (cur as Record<string, unknown>)) {
+      cur = (cur as Record<string, unknown>)[k];
+    } else {
+      return undefined;
+    }
+  }
+  return typeof cur === "string" ? cur : undefined;
+}
 
 export function useTranslation() {
   const { selectedLanguage } = useLanguage();
   const [translationCache, setTranslationCache] = useState<Record<string, string>>({});
 
-  // Get static translation from JSON file
+  // Lookup from the static JSON dictionary, falling back to English then to the key.
   const getStaticTranslation = (key: string): string => {
-    const keys = key.split('.');
-    let value: any = translations[selectedLanguage as keyof typeof translations];
-    
-    for (const k of keys) {
-      value = value?.[k];
-    }
-    
-    return value || translations.en[key as keyof typeof translations.en] || key;
+    const path = key.split(".");
+    return (
+      readDottedKey(dict[selectedLanguage], path) ??
+      readDottedKey(dict.en, path) ??
+      key
+    );
   };
 
-  // Get dynamic translation using Google Translate API
+  // Translate arbitrary text via the API (cached per-call).
   const getDynamicTranslation = async (text: string): Promise<string> => {
-    if (selectedLanguage === 'en' || !text) {
-      return text;
-    }
+    if (selectedLanguage === "en" || !text) return text;
 
-    // Check cache first
     const cacheKey = `${selectedLanguage}:${text}`;
-    if (translationCache[cacheKey]) {
-      return translationCache[cacheKey];
-    }
+    if (translationCache[cacheKey]) return translationCache[cacheKey];
 
     try {
-      const response = await fetch('/api/translate', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          text: text,
-          targetLang: selectedLanguage,
-        }),
+      const response = await fetch("/api/translate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text, targetLang: selectedLanguage }),
       });
-
       if (response.ok) {
         const data = await response.json();
-        const translated = data.translated || text;
-        
-        // Cache the translation
-        setTranslationCache(prev => ({
-          ...prev,
-          [cacheKey]: translated
-        }));
-        
+        const translated: string = data.translated || text;
+        setTranslationCache((prev) => ({ ...prev, [cacheKey]: translated }));
         return translated;
       }
-    } catch (error) {
-      console.error('Translation failed:', error);
+    } catch (err) {
+      console.error("Translation failed:", err);
     }
-
     return text;
   };
 
-  // Main translation function
-  const t = (key: string): string => {
-    return getStaticTranslation(key);
-  };
+  const t = (key: string): string => getStaticTranslation(key);
+  const translate = (text: string): Promise<string> => getDynamicTranslation(text);
 
-  // Dynamic translation function
-  const translate = async (text: string): Promise<string> => {
-    return await getDynamicTranslation(text);
-  };
-
-  return {
-    t,
-    translate,
-    language: selectedLanguage
-  };
+  return { t, translate, language: selectedLanguage };
 }

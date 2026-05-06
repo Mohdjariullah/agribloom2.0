@@ -6,7 +6,10 @@ import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import axios from "axios";
+import { T } from "@/components/T";
 
+import { useLanguage } from "@/contexts/LanguageContext";
+import { LANGUAGES } from "@/lib/languages";
 import {
   LogOut,
   User,
@@ -25,12 +28,12 @@ import {
   ShieldCheck,
   LayoutDashboard,
   ClipboardList,
-  PieChart,
   TrendingUp,
   BookOpen,
   TreePine,
   MessageCircle,
   FileText,
+  Globe,
 } from "lucide-react";
 
 type Role = "admin" | "farmer" | "";
@@ -115,18 +118,18 @@ export default function Navbar() {
         {/* Desktop nav */}
         <div className="hidden lg:flex items-center gap-1">
           <NavLink href="/mandi-prices" active={isActive("/mandi-prices")}>
-            Mandi prices
+            <T>Mandi prices</T>
           </NavLink>
           <NavLink href="/agrilens" active={isActive("/agrilens") || isActive("/crops")}>
-            Crops
+            <T>Crops</T>
           </NavLink>
           <NavLink href="/schemes" active={isActive("/schemes")}>
-            Schemes
+            <T>Schemes</T>
           </NavLink>
 
           {isAuthenticated && (
             <NavLink href="/chat" active={isActive("/chat")}>
-              Assistant
+              <T>Assistant</T>
             </NavLink>
           )}
 
@@ -224,6 +227,8 @@ export default function Navbar() {
                     <DropdownItem href="/profile" icon={<User className="h-4 w-4" />} title="Profile" onClick={() => setOpenMenu(null)} />
                     <DropdownItem href="/contactus" icon={<Mail className="h-4 w-4" />} title="Contact us" onClick={() => setOpenMenu(null)} />
                     <div className="border-t border-stone-100 my-1" />
+                    <LanguagePicker onPick={() => setOpenMenu(null)} />
+                    <div className="border-t border-stone-100 my-1" />
                     <Link
                       href="/logout"
                       onClick={() => setOpenMenu(null)}
@@ -232,7 +237,7 @@ export default function Navbar() {
                       <span className="bg-red-50 text-red-600 p-1.5 rounded-md">
                         <LogOut className="h-4 w-4" />
                       </span>
-                      <span className="text-sm font-medium text-red-700">Sign out</span>
+                      <span className="text-sm font-medium text-red-700"><T>Sign out</T></span>
                     </Link>
                   </motion.div>
                 )}
@@ -242,17 +247,18 @@ export default function Navbar() {
 
           {!isAuthenticated && (
             <div className="hidden sm:flex items-center gap-2">
+              <GlobeButton />
               <Link
                 href="/login"
                 className="text-sm font-medium text-stone-700 hover:text-stone-900 px-3 py-2 transition-colors"
               >
-                Sign in
+                <T>Sign in</T>
               </Link>
               <Link
                 href="/signup"
                 className="text-sm font-medium bg-stone-900 hover:bg-stone-800 text-white rounded-full px-4 py-2 transition-colors"
               >
-                Get started
+                <T>Get started</T>
               </Link>
             </div>
           )}
@@ -325,19 +331,22 @@ export default function Navbar() {
                 </>
               )}
 
+              <LanguagePicker onPick={() => setMobileOpen(false)} />
+
+
               {!isAuthenticated && (
                 <div className="grid grid-cols-2 gap-2 pt-3 px-1">
                   <Link
                     href="/login"
                     className="text-center text-sm font-medium text-stone-900 border border-stone-300 hover:border-stone-400 rounded-full py-2 transition-colors"
                   >
-                    Sign in
+                    <T>Sign in</T>
                   </Link>
                   <Link
                     href="/signup"
                     className="text-center text-sm font-medium bg-stone-900 hover:bg-stone-800 text-white rounded-full py-2 transition-colors"
                   >
-                    Get started
+                    <T>Get started</T>
                   </Link>
                 </div>
               )}
@@ -394,7 +403,7 @@ const Dropdown = React.forwardRef<
             : "text-stone-600 hover:text-stone-900 hover:bg-stone-50"
         }`}
       >
-        {label}
+        <T>{label}</T>
         <ChevronDown className={`h-3.5 w-3.5 transition-transform ${open ? "rotate-180" : ""}`} />
       </button>
       <AnimatePresence>
@@ -442,8 +451,8 @@ function DropdownItem({
         {icon}
       </span>
       <div className="min-w-0">
-        <p className="font-medium text-stone-900 text-sm">{title}</p>
-        {subtitle && <p className="text-xs text-stone-500 truncate">{subtitle}</p>}
+        <p className="font-medium text-stone-900 text-sm"><T>{title}</T></p>
+        {subtitle && <p className="text-xs text-stone-500 truncate"><T>{subtitle}</T></p>}
       </div>
     </Link>
   );
@@ -468,15 +477,90 @@ function MobileLink({
       }`}
     >
       <span className={danger ? "text-red-500" : "text-stone-500"}>{icon}</span>
-      <span className="font-medium text-sm">{title}</span>
+      <span className="font-medium text-sm"><T>{title}</T></span>
     </Link>
   );
 }
 
-function Section({ children }: { children: React.ReactNode }) {
+function Section({ children }: { children: string }) {
   return (
     <p className="text-[10px] font-semibold text-stone-400 uppercase tracking-[0.15em] px-3 pt-3 pb-1">
-      {children}
+      <T>{children}</T>
     </p>
+  );
+}
+
+function GlobeButton() {
+  const { selectedLanguage } = useLanguage();
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+  const code = selectedLanguage.toUpperCase();
+
+  useEffect(() => {
+    const onDown = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    };
+    document.addEventListener("mousedown", onDown);
+    return () => document.removeEventListener("mousedown", onDown);
+  }, []);
+
+  return (
+    <div className="relative" ref={ref}>
+      <button
+        onClick={() => setOpen((v) => !v)}
+        aria-label="Change language"
+        className="flex items-center gap-1.5 text-stone-600 hover:text-stone-900 hover:bg-stone-100 rounded-full px-3 py-2 transition-colors"
+      >
+        <Globe className="h-4 w-4" />
+        <span className="text-xs font-medium">{code}</span>
+      </button>
+      <AnimatePresence>
+        {open && (
+          <motion.div
+            initial={{ opacity: 0, y: -8 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -8 }}
+            transition={{ duration: 0.15 }}
+            className="absolute right-0 mt-2 bg-white p-2 rounded-xl shadow-lg z-50 min-w-[260px] border border-stone-200"
+          >
+            <LanguagePicker onPick={() => setOpen(false)} />
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+}
+
+function LanguagePicker({ onPick }: { onPick?: () => void }) {
+  const { selectedLanguage, setSelectedLanguage } = useLanguage();
+  const current = LANGUAGES.find((l) => l.code === selectedLanguage)?.name ?? "English";
+  return (
+    <div className="px-2 pb-2">
+      <p className="flex items-center text-[10px] font-semibold text-stone-400 uppercase tracking-[0.15em] px-1 pt-3 pb-2">
+        <Globe className="h-3 w-3 mr-2" />
+        <T>Language</T>
+        <span className="ml-auto text-stone-700 normal-case tracking-normal text-[11px] font-medium">
+          {current}
+        </span>
+      </p>
+      <div className="grid grid-cols-2 gap-1">
+        {LANGUAGES.map((l) => (
+          <button
+            key={l.code}
+            onClick={() => {
+              setSelectedLanguage(l.code);
+              onPick?.();
+            }}
+            className={`text-left text-[12px] px-3 py-2 rounded transition-colors ${
+              selectedLanguage === l.code
+                ? "bg-stone-900 text-white"
+                : "text-stone-700 hover:bg-stone-100"
+            }`}
+          >
+            {l.name}
+          </button>
+        ))}
+      </div>
+    </div>
   );
 }

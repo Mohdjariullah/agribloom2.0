@@ -1,5 +1,6 @@
 import Link from "next/link";
 import Image from "next/image";
+import { T } from "@/components/T";
 
 export default function AuthShell({
   title,
@@ -29,22 +30,22 @@ export default function AuthShell({
 
         <div className="max-w-md">
           <p className="text-xs uppercase tracking-[0.2em] text-stone-500 mb-4">
-            What you get
+            <T>What you get</T>
           </p>
           <h2 className="text-3xl xl:text-4xl font-semibold tracking-tight leading-[1.15] mb-6">
-            Practical farming tools, drawn from government data.
+            <T>Practical farming tools, drawn from government data.</T>
           </h2>
           <ul className="space-y-2.5 text-stone-300 text-[15px]">
-            <li>· 200+ crop guides with seasons, soil, water needs</li>
-            <li>· Live mandi prices from AGMARKNET</li>
-            <li>· Weather forecasts with crop-specific alerts</li>
-            <li>· Pest, disease and fertilizer guidance</li>
-            <li>· An assistant that ties it all together</li>
+            <li>· <T>200+ crop guides with seasons, soil, water needs</T></li>
+            <li>· <T>Live mandi prices from AGMARKNET</T></li>
+            <li>· <T>Weather forecasts with crop-specific alerts</T></li>
+            <li>· <T>Pest, disease and fertilizer guidance</T></li>
+            <li>· <T>An assistant that ties it all together</T></li>
           </ul>
         </div>
 
         <p className="text-xs text-stone-500">
-          Sourced from data.gov.in, OpenWeatherMap, ICAR and KVKs.
+          <T>Sourced from data.gov.in, OpenWeatherMap, ICAR and KVKs.</T>
         </p>
       </aside>
 
@@ -63,7 +64,7 @@ export default function AuthShell({
           </Link>
           <span className="hidden lg:block" />
           <Link href="/" className="text-sm text-stone-500 hover:text-stone-900 transition-colors">
-            ← Back to home
+            ← <T>Back to home</T>
           </Link>
         </header>
 
@@ -71,10 +72,10 @@ export default function AuthShell({
           <div className="w-full max-w-sm">
             <div className="mb-8">
               <h1 className="text-3xl font-semibold tracking-tight text-stone-900 mb-2">
-                {title}
+                <T>{title}</T>
               </h1>
               {subtitle && (
-                <p className="text-stone-600 text-[15px] leading-relaxed">{subtitle}</p>
+                <p className="text-stone-600 text-[15px] leading-relaxed"><T>{subtitle}</T></p>
               )}
             </div>
 
@@ -95,6 +96,7 @@ export default function AuthShell({
 }
 
 // Small reusable form primitives so login/signup look identical.
+// String children are auto-translated; ReactNode children render as-is.
 export function FormLabel({
   htmlFor,
   children,
@@ -107,7 +109,7 @@ export function FormLabel({
   return (
     <div className="flex items-baseline justify-between mb-1.5">
       <label htmlFor={htmlFor} className="text-sm font-medium text-stone-800">
-        {children}
+        {typeof children === "string" ? <T>{children}</T> : children}
       </label>
       {hint && <span className="text-xs text-stone-500">{hint}</span>}
     </div>

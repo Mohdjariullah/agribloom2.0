@@ -3,11 +3,13 @@
  * One handler per tool name in tools.ts.
  */
 
+import type { AnyBulkWriteOperation } from "mongoose";
 import { connectToDB } from "@/dbConfig/dbConfig";
 import Crop from "@/models/Crop";
 import Pest from "@/models/Pest";
 import FertilizerGuide from "@/models/FertilizerGuide";
 import MandiPrice from "@/models/MandiPriceCache";
+import type { IMandiPrice } from "@/models/MandiPriceCache";
 import GovtScheme from "@/models/GovtScheme";
 import {
   fetchAgmarknetPrices,
@@ -54,34 +56,33 @@ async function get_mandi_price(args: Args): Promise<Result> {
       limit: 50,
     });
     if (records.length) {
-      const ops = records
-        .map((r) => {
-          const arrivalDate = parseArrivalDate(r.arrival_date);
-          if (!arrivalDate) return null;
-          return {
-            updateOne: {
-              filter: {
-                market: r.market,
-                commodity: r.commodity,
-                variety: r.variety ?? "",
-                arrivalDate,
-              },
-              update: {
-                $set: {
-                  state: r.state,
-                  district: r.district,
-                  grade: r.grade ?? "",
-                  minPrice: toNumberOrUndefined(r.min_price),
-                  maxPrice: toNumberOrUndefined(r.max_price),
-                  modalPrice: toNumberOrUndefined(r.modal_price),
-                  fetchedAt: new Date(),
-                },
-              },
-              upsert: true,
+      const ops: AnyBulkWriteOperation<IMandiPrice>[] = [];
+      for (const r of records) {
+        const arrivalDate = parseArrivalDate(r.arrival_date);
+        if (!arrivalDate) continue;
+        ops.push({
+          updateOne: {
+            filter: {
+              market: r.market,
+              commodity: r.commodity,
+              variety: r.variety ?? "",
+              arrivalDate,
             },
-          };
-        })
-        .filter(Boolean) as object[];
+            update: {
+              $set: {
+                state: r.state,
+                district: r.district,
+                grade: r.grade ?? "",
+                minPrice: toNumberOrUndefined(r.min_price),
+                maxPrice: toNumberOrUndefined(r.max_price),
+                modalPrice: toNumberOrUndefined(r.modal_price),
+                fetchedAt: new Date(),
+              },
+            },
+            upsert: true,
+          },
+        });
+      }
       if (ops.length) await MandiPrice.bulkWrite(ops, { ordered: false }).catch(() => {});
     }
   } catch (err) {

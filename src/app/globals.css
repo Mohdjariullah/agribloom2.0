@@ -135,3 +135,14 @@
 .animate-fall {
   animation: fall linear infinite;
 }
+/* Chatbase widget — keep its floating bubble above the mobile CTA bar
+   on small screens so they don't overlap. The script inserts an iframe
+   with id="chatbase-bubble-button" or similar. We target both the
+   bubble and any opened window. */
+@media (max-width: 639px) {
+  #chatbase-bubble-button,
+  iframe[id^="chatbase-"],
+  [data-chatbase-bubble] {
+    bottom: 88px !important;
+  }
+}

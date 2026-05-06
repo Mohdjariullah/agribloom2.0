@@ -35,17 +35,30 @@ export function parseMandiCSV(csvContent: string): MandiPriceRecord[] {
       }
     });
 
-    return records.map((record: any) => ({
-      market: record.market || record.market_name || record.mandi || record.Market || 'Unknown Market',
-      commodity: record.commodity || record.crop || record.Commodity || 'Unknown Commodity',
-      state: record.state || record.State || 'Unknown State',
-      district: record.district || record.District || 'Unknown District',
-      min_price: record.min_price || record.minPrice || record.minimum_price || record.Min_x0020_Price || 0,
-      max_price: record.max_price || record.maxPrice || record.maximum_price || record.Max_x0020_Price || 0,
-      modal_price: record.modal_price || record.modalPrice || record.price || record.average_price || record.Modal_x0020_Price || 0,
-      arrival_date: record.arrival_date || record.date || record.arrivalDate || record.Arrival_Date || new Date().toISOString().split('T')[0],
-      arrival_quantity: record.arrival_quantity || record.quantity || record.arrival_quantity || 0,
-      variety: record.variety || record.type || record.Variety || ''
+    const str = (v: unknown, fallback = "") =>
+      v == null || v === "" ? fallback : String(v);
+    const num = (v: unknown, fallback = 0) => {
+      if (v == null || v === "") return fallback;
+      const n = typeof v === "number" ? v : parseFloat(String(v).replace(/[^\d.-]/g, ""));
+      return Number.isFinite(n) ? n : fallback;
+    };
+
+    return (records as Record<string, unknown>[]).map((record) => ({
+      market: str(record.market || record.market_name || record.mandi || record.Market, "Unknown Market"),
+      commodity: str(record.commodity || record.crop || record.Commodity, "Unknown Commodity"),
+      state: str(record.state || record.State, "Unknown State"),
+      district: str(record.district || record.District, "Unknown District"),
+      min_price: num(record.min_price ?? record.minPrice ?? record.minimum_price ?? record.Min_x0020_Price),
+      max_price: num(record.max_price ?? record.maxPrice ?? record.maximum_price ?? record.Max_x0020_Price),
+      modal_price: num(
+        record.modal_price ?? record.modalPrice ?? record.price ?? record.average_price ?? record.Modal_x0020_Price
+      ),
+      arrival_date: str(
+        record.arrival_date || record.date || record.arrivalDate || record.Arrival_Date,
+        new Date().toISOString().split("T")[0]
+      ),
+      arrival_quantity: num(record.arrival_quantity ?? record.quantity),
+      variety: str(record.variety || record.type || record.Variety, ""),
     }));
   } catch (error) {
     console.error('CSV parsing error:', error);

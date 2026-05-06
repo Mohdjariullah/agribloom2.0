@@ -1,10 +1,26 @@
 import type { Metadata } from "next";
+import { Inter, Noto_Sans_Devanagari } from "next/font/google";
 import "./globals.css";
 
 import ConditionalNavbar from "./ConditionalNavbar";
 import { Toaster } from "react-hot-toast";
 import { LanguageProvider } from "@/contexts/LanguageContext";
 import ChatLauncher from "@/components/ChatLauncher";
+
+const inter = Inter({
+  subsets: ["latin"],
+  variable: "--font-inter",
+  display: "swap",
+});
+
+// Loaded so Devanagari (Hindi) renders correctly even on Windows / Android
+// browsers that don't ship a built-in Hindi font. Used implicitly via the
+// font-stack on body.
+const notoDevanagari = Noto_Sans_Devanagari({
+  subsets: ["devanagari", "latin"],
+  variable: "--font-noto-devanagari",
+  display: "swap",
+});
 
 export const metadata: Metadata = {
   title: "AgriBloom — Smart farming, made simple",
@@ -18,8 +34,17 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en">
-      <body className="bg-white text-stone-900 antialiased">
+    <html
+      lang="en"
+      className={`${inter.variable} ${notoDevanagari.variable}`}
+    >
+      <body
+        className="bg-white text-stone-900 antialiased"
+        style={{
+          fontFamily:
+            "var(--font-inter), var(--font-noto-devanagari), system-ui, sans-serif",
+        }}
+      >
         <LanguageProvider>
           <ConditionalNavbar />
           <div className="min-h-screen">{children}</div>

@@ -23,6 +23,7 @@ import {
   ArrowUpRight,
   MessageCircle,
 } from "lucide-react";
+import { T } from "@/components/T";
 
 type TrendPoint = {
   crop: string;
@@ -102,15 +103,17 @@ export default function FarmerDashboardPage() {
         {/* Hello strip */}
         <div className="mb-8">
           <p className="text-xs uppercase tracking-[0.2em] text-stone-500 mb-2">
-            Dashboard
+            <T>Dashboard</T>
           </p>
           <h1 className="text-3xl sm:text-4xl font-semibold tracking-tight text-stone-900 mb-1">
-            Welcome back{profile?.username ? `, ${profile.username}` : ""}.
+            <T>Welcome back</T>{profile?.username ? `, ${profile.username}` : ""}.
           </h1>
           <p className="text-stone-600 text-sm sm:text-base">
-            {profile?.state || profile?.district
-              ? `Showing data for ${[profile.district, profile.state].filter(Boolean).join(", ")}.`
-              : "Set your state and district in your profile to personalize this view."}
+            {profile?.state || profile?.district ? (
+              <T>{`Showing data for ${[profile.district, profile.state].filter(Boolean).join(", ")}.`}</T>
+            ) : (
+              <T>Set your state and district in your profile to personalize this view.</T>
+            )}
           </p>
         </div>
 
@@ -193,7 +196,7 @@ export default function FarmerDashboardPage() {
         {/* Quick links */}
         <div className="mb-4">
           <h2 className="text-sm uppercase tracking-[0.15em] text-stone-500 mb-3">
-            Quick access
+            <T>Quick access</T>
           </h2>
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
             {QUICK_LINKS.map((q) => {
@@ -210,8 +213,8 @@ export default function FarmerDashboardPage() {
                     </span>
                     <ArrowUpRight className="w-3.5 h-3.5 text-stone-300 group-hover:text-stone-900 group-hover:-translate-y-0.5 group-hover:translate-x-0.5 transition-all" />
                   </div>
-                  <p className="text-sm font-semibold text-stone-900 mb-0.5">{q.title}</p>
-                  <p className="text-xs text-stone-500 leading-snug">{q.desc}</p>
+                  <p className="text-sm font-semibold text-stone-900 mb-0.5"><T>{q.title}</T></p>
+                  <p className="text-xs text-stone-500 leading-snug"><T>{q.desc}</T></p>
                 </Link>
               );
             })}
@@ -239,11 +242,11 @@ function SnapshotCard({
       className="group bg-white border border-stone-200 hover:border-stone-300 hover:shadow-sm rounded-xl p-4 transition-all flex items-start justify-between gap-3"
     >
       <div className="min-w-0">
-        <p className="text-xs uppercase tracking-wider text-stone-500 mb-1">{label}</p>
-        <p className="text-stone-900 font-medium truncate">{value}</p>
+        <p className="text-xs uppercase tracking-wider text-stone-500 mb-1"><T>{label}</T></p>
+        <p className="text-stone-900 font-medium truncate"><T>{value}</T></p>
       </div>
       <span className="text-xs text-stone-500 group-hover:text-stone-900 flex items-center gap-0.5 flex-shrink-0 mt-0.5">
-        {cta} <ArrowUpRight className="w-3 h-3" />
+        <T>{cta}</T> <ArrowUpRight className="w-3 h-3" />
       </span>
     </Link>
   );

@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
+import type { AnyBulkWriteOperation } from "mongoose";
 import { connectToDB } from "@/dbConfig/dbConfig";
 import MandiPrice from "@/models/MandiPriceCache";
+import type { IMandiPrice } from "@/models/MandiPriceCache";
 import {
   fetchAgmarknetPrices,
   parseArrivalDate,
@@ -51,34 +53,33 @@ async function handle(args: Required<Omit<Body, "market">> & { market?: string }
 
   // 2. Upsert anything we got into the cache
   if (records.length > 0) {
-    const ops = records
-      .map((r) => {
-        const arrivalDate = parseArrivalDate(r.arrival_date);
-        if (!arrivalDate) return null;
-        return {
-          updateOne: {
-            filter: {
-              market: r.market,
-              commodity: r.commodity,
-              variety: r.variety ?? "",
-              arrivalDate,
-            },
-            update: {
-              $set: {
-                state: r.state,
-                district: r.district,
-                grade: r.grade ?? "",
-                minPrice: toNumberOrUndefined(r.min_price),
-                maxPrice: toNumberOrUndefined(r.max_price),
-                modalPrice: toNumberOrUndefined(r.modal_price),
-                fetchedAt: new Date(),
-              },
-            },
-            upsert: true,
+    const ops: AnyBulkWriteOperation<IMandiPrice>[] = [];
+    for (const r of records) {
+      const arrivalDate = parseArrivalDate(r.arrival_date);
+      if (!arrivalDate) continue;
+      ops.push({
+        updateOne: {
+          filter: {
+            market: r.market,
+            commodity: r.commodity,
+            variety: r.variety ?? "",
+            arrivalDate,
           },
-        };
-      })
-      .filter(Boolean) as object[];
+          update: {
+            $set: {
+              state: r.state,
+              district: r.district,
+              grade: r.grade ?? "",
+              minPrice: toNumberOrUndefined(r.min_price),
+              maxPrice: toNumberOrUndefined(r.max_price),
+              modalPrice: toNumberOrUndefined(r.modal_price),
+              fetchedAt: new Date(),
+            },
+          },
+          upsert: true,
+        },
+      });
+    }
 
     if (ops.length) {
       try {
