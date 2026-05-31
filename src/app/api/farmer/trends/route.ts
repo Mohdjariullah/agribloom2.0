@@ -5,6 +5,20 @@ import { connectToDB } from "@/dbConfig/dbConfig";
 import CropEntryModel, { ICropEntry } from "@/models/CropEntry";
 import { getDataFromToken } from "@/helpers/getDataFromToken";
 
+// Days that count as "recent" when measuring whether a crop is rising or
+// falling in the area. Entries newer than this are compared against the
+// equally-long window just before it.
+const RECENT_WINDOW_DAYS = 120;
+
+function entryTime(e: ICropEntry): number {
+  // Prefer the agronomic sowing date; fall back to record creation time.
+  const d =
+    (e.sowingDate && new Date(e.sowingDate).getTime()) ||
+    (e as unknown as { createdAt?: Date }).createdAt?.getTime?.() ||
+    0;
+  return Number.isFinite(d) ? d : 0;
+}
+
 export async function GET(request: NextRequest) {
   try {
     await connectToDB();
@@ -12,52 +26,73 @@ export async function GET(request: NextRequest) {
     let entries: ICropEntry[] = [];
 
     if (role === "admin") {
-      // Admin sees all crop entries
       entries = await CropEntryModel.find();
     } else {
-      // Farmer: get their district
       const farmerEntries = await CropEntryModel.find({ farmerId: userId });
       if (farmerEntries.length === 0) return NextResponse.json([]);
       const district = farmerEntries[0].district;
-
-      // Get all crop entries in same district
       entries = await CropEntryModel.find({ district });
     }
 
-    // Group crops
-    const cropMap = new Map<string, { area: number; entries: ICropEntry[] }>();
+    const now = Date.now();
+    const windowMs = RECENT_WINDOW_DAYS * 24 * 60 * 60 * 1000;
+    const recentCutoff = now - windowMs;
+    const priorCutoff = now - 2 * windowMs;
+
+    const cropMap = new Map<
+      string,
+      { area: number; recentArea: number; priorArea: number; mine: boolean; entries: ICropEntry[] }
+    >();
     let totalAreaAllCrops = 0;
 
     for (const entry of entries) {
       totalAreaAllCrops += entry.area;
       const key = entry.crop;
-      const prev = cropMap.get(key);
-      if (prev) {
-        prev.area += entry.area;
-        prev.entries.push(entry);
-      } else {
-        cropMap.set(key, { area: entry.area, entries: [entry] });
-      }
+      const t = entryTime(entry);
+      const cur =
+        cropMap.get(key) ?? { area: 0, recentArea: 0, priorArea: 0, mine: false, entries: [] };
+      cur.area += entry.area;
+      if (t >= recentCutoff) cur.recentArea += entry.area;
+      else if (t >= priorCutoff) cur.priorArea += entry.area;
+      // Flag crops the requesting farmer has personally logged, so the
+      // dashboard can mark them as "yours".
+      if (String(entry.farmerId) === String(userId)) cur.mine = true;
+      cur.entries.push(entry);
+      cropMap.set(key, cur);
     }
 
-    const trends = Array.from(cropMap, ([crop, { area, entries }]) => {
-      const totalEntries = entries.length;
-      const averageArea = totalEntries > 0 ? area / totalEntries : 0;
-      const percentage =
-        totalAreaAllCrops > 0 ? (area / totalAreaAllCrops) * 100 : 0;
+    const trends = Array.from(cropMap, ([crop, v]) => {
+      const totalEntries = v.entries.length;
+      const averageArea = totalEntries > 0 ? v.area / totalEntries : 0;
+      const percentage = totalAreaAllCrops > 0 ? (v.area / totalAreaAllCrops) * 100 : 0;
 
-      // If there are multiple villages, you can list them all, or just show the first one.
-      // Here, we show the first village for simplicity.
+      // Direction of the area over time.
+      let trend: "up" | "down" | "flat" | "new" = "flat";
+      let changePct = 0;
+      if (v.priorArea === 0 && v.recentArea > 0) {
+        trend = "new";
+      } else if (v.priorArea > 0) {
+        changePct = ((v.recentArea - v.priorArea) / v.priorArea) * 100;
+        if (changePct > 5) trend = "up";
+        else if (changePct < -5) trend = "down";
+        else trend = "flat";
+      }
+
       return {
         crop,
         totalEntries,
-        totalArea: area,
+        totalArea: v.area,
         averageArea,
         percentage,
-        district: entries[0].district,
-        village: entries[0].village, // <-- Add this line to include village
+        recentArea: v.recentArea,
+        priorArea: v.priorArea,
+        trend,
+        changePct: Math.round(changePct),
+        mine: v.mine,
+        district: v.entries[0].district,
+        village: v.entries[0].village,
       };
-    });
+    }).sort((a, b) => b.totalArea - a.totalArea);
 
     return NextResponse.json(trends);
   } catch (error) {

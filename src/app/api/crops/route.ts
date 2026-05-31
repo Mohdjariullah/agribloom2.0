@@ -7,6 +7,11 @@ import type { ICrop } from "@/models/Crop";
 
 export const dynamic = "force-dynamic";
 
+// Escape user input so it can't break the regex.
+function escapeRegex(s: string) {
+  return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
 // GET /api/crops?state=&season=&soil=&category=&q=&limit=&page=
 export async function GET(req: NextRequest) {
   await connectToDB();
@@ -16,7 +21,7 @@ export async function GET(req: NextRequest) {
   const season = searchParams.get("season");
   const soil = searchParams.get("soil");
   const category = searchParams.get("category");
-  const q = searchParams.get("q");
+  const q = (searchParams.get("q") ?? "").trim();
   const limit = Math.min(Number(searchParams.get("limit") ?? 50), 200);
   const page = Math.max(Number(searchParams.get("page") ?? 1), 1);
 
@@ -25,12 +30,23 @@ export async function GET(req: NextRequest) {
   if (season) filter.season = season.toLowerCase();
   if (soil) filter.soilTypes = { $regex: new RegExp(soil, "i") };
   if (category) filter.category = category;
-  if (q) filter.$text = { $search: q };
+  // Substring search (case-insensitive) — "water" matches "Watermelon",
+  // "Water Chestnut", etc. A $text index only matches whole words, so it
+  // would NOT surface those; a regex on the key name fields does.
+  if (q) {
+    const rx = new RegExp(escapeRegex(q), "i");
+    filter.$or = [
+      { name: rx },
+      { scientificName: rx },
+      { nameHindi: rx },
+      { category: rx },
+    ];
+  }
 
   try {
     const [items, total] = await Promise.all([
       Crop.find(filter)
-        .sort(q ? { score: { $meta: "textScore" } } : { name: 1 })
+        .sort({ name: 1 })
         .skip((page - 1) * limit)
         .limit(limit)
         .lean(),

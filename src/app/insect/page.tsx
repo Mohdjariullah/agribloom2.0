@@ -138,6 +138,12 @@ export default function PestPage() {
                 {pest.affectedCrops?.length > 0 && (
                   <p className="text-xs text-stone-500 mb-2 truncate">
                     Affects: {pest.affectedCrops.slice(0, 3).join(", ")}
+                    {pest.affectedCrops.length > 3 && (
+                      <span className="text-stone-400">
+                        {" "}
+                        +{pest.affectedCrops.length - 3} more
+                      </span>
+                    )}
                   </p>
                 )}
                 <p className="text-sm text-stone-600 line-clamp-3 leading-relaxed">

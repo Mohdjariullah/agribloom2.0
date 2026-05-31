@@ -30,7 +30,7 @@ export async function GET(request: NextRequest) {
   await connectToDB();
   try {
     const decoded = getDataFromToken(request);
-    const user = await User.findById(decoded.id).select("-password");
+    const user = await User.findById(decoded.id).select("-password -verifyToken -verifyTokenExpiry -forgotPasswordToken -forgotPasswordTokenExpiry");
     return NextResponse.json({ message: "User found", data: user });
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : "Unauthorized";
@@ -60,7 +60,7 @@ export async function PATCH(request: NextRequest) {
 
     const updated = await User.findByIdAndUpdate(decoded.id, updates, {
       new: true,
-    }).select("-password");
+    }).select("-password -verifyToken -verifyTokenExpiry -forgotPasswordToken -forgotPasswordTokenExpiry");
 
     return NextResponse.json({ message: "Profile updated", user: updated });
   } catch (error: unknown) {
