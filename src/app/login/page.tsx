@@ -4,12 +4,11 @@ import React, { useState, Suspense } from "react";
 import Link from "next/link";
 import axios from "axios";
 import { toast } from "react-hot-toast";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import AuthShell, { FormInput, FormLabel, PrimaryButton } from "@/components/AuthShell";
 import { T } from "@/components/T";
 
 function LoginForm() {
-  const router = useRouter();
   const searchParams = useSearchParams();
   const explicitRedirect = searchParams.get("redirect");
 
@@ -27,16 +26,16 @@ function LoginForm() {
       toast.success("Logged in");
 
       const { profileCompleted, role } = res.data;
-      if (!profileCompleted) {
-        router.push("/complete-profile");
-        return;
-      }
-      if (explicitRedirect) {
-        router.push(explicitRedirect);
-        return;
-      }
-      // Role-based home
-      router.push(role === "admin" ? "/admin/dashboard" : "/farmer/dashboard");
+      const target = !profileCompleted
+        ? "/complete-profile"
+        : explicitRedirect || (role === "admin" ? "/admin/dashboard" : "/farmer/dashboard");
+
+      // Hard navigation (not router.push) so the freshly-set auth cookie is
+      // re-evaluated by middleware and the Next.js router cache — which can hold
+      // logged-out prefetches of protected routes — is fully cleared. This is
+      // what fixes "logged in but bounced back to login" on mobile.
+      window.location.assign(target);
+      return;
     } catch (error: unknown) {
       let msg = "Login failed";
       if (

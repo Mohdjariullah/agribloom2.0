@@ -14,6 +14,7 @@ import {
 } from "@/components/AuthShell";
 import { INDIAN_STATES } from "@/lib/indianStates";
 import { LANGUAGES } from "@/lib/languages";
+import { districtsFor } from "@/lib/districts";
 
 type ProfileForm = {
   state: string;
@@ -162,7 +163,11 @@ export default function CompleteProfilePage() {
               <FormSelect
                 id="state"
                 value={form.state}
-                onChange={(e) => setForm((f) => ({ ...f, state: e.target.value }))}
+                onChange={(e) =>
+                  // Reset district when state changes so a stale district
+                  // from a different state can't linger.
+                  setForm((f) => ({ ...f, state: e.target.value, district: "" }))
+                }
                 required
               >
                 <option value="">Select state</option>
@@ -176,12 +181,28 @@ export default function CompleteProfilePage() {
 
             <div>
               <FormLabel htmlFor="district">District</FormLabel>
-              <FormInput
-                id="district"
-                value={form.district}
-                onChange={(e) => setForm((f) => ({ ...f, district: e.target.value }))}
-                placeholder="e.g. Bengaluru Rural"
-              />
+              {districtsFor(form.state).length > 0 ? (
+                <FormSelect
+                  id="district"
+                  value={form.district}
+                  onChange={(e) => setForm((f) => ({ ...f, district: e.target.value }))}
+                >
+                  <option value="">Select district</option>
+                  {districtsFor(form.state).map((d) => (
+                    <option key={d} value={d}>
+                      {d}
+                    </option>
+                  ))}
+                </FormSelect>
+              ) : (
+                <FormInput
+                  id="district"
+                  value={form.district}
+                  onChange={(e) => setForm((f) => ({ ...f, district: e.target.value }))}
+                  placeholder={form.state ? "Type your district" : "Pick a state first"}
+                  disabled={!form.state}
+                />
+              )}
             </div>
           </div>
 

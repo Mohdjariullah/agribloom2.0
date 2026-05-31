@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { Globe, Phone } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { LANGUAGES } from "@/lib/languages";
+import { T } from "@/components/T";
 
 // Real number to be supplied by the user; placeholder until then.
 const HELPLINE_PLACEHOLDER = "1800-XXX-XXXX";
@@ -11,26 +12,35 @@ const HELPLINE_HREF = "tel:1800XXXXXXX";
 
 export function TopUtilityStrip() {
   return (
-    <div className="bg-stone-900 text-stone-200">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 h-9 flex items-center justify-between text-[12px]">
-        <p className="text-stone-300 truncate">
-          <span className="hidden sm:inline">For India&apos;s farmers · </span>
-          <span lang="hi" className="text-stone-200">भारत के किसानों के लिए</span>
-        </p>
-        <div className="flex items-center gap-1.5 sm:gap-3">
-          <a
-            href={HELPLINE_HREF}
-            className="hidden sm:inline-flex items-center gap-1.5 text-stone-300 hover:text-white transition-colors"
-            aria-label="Helpline number"
-          >
-            <Phone className="w-3 h-3" />
-            <span>{HELPLINE_PLACEHOLDER}</span>
-          </a>
-          <span className="hidden sm:inline-block text-stone-700">|</span>
-          <LanguagePill />
+    <>
+      {/* Tricolour hairline — the single strongest "Government of India" cue */}
+      <div aria-hidden className="flex h-1">
+        <span className="flex-1 bg-[#FF9933]" />
+        <span className="flex-1 bg-white" />
+        <span className="flex-1 bg-[#138808]" />
+      </div>
+      <div className="bg-green-800 text-green-50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 h-9 flex items-center justify-between text-[12px]">
+          {/* Eyebrow follows the site language: English shows English, Hindi
+              shows Hindi, etc. (translated at runtime via <T>). */}
+          <p className="truncate text-white">
+            <T>For India&apos;s farmers</T>
+          </p>
+          <div className="flex items-center gap-1.5 sm:gap-3">
+            <a
+              href={HELPLINE_HREF}
+              className="inline-flex items-center gap-1.5 text-green-50 hover:text-white transition-colors font-medium"
+              aria-label="Helpline number"
+            >
+              <Phone className="w-3 h-3" />
+              <span>{HELPLINE_PLACEHOLDER}</span>
+            </a>
+            <span className="hidden sm:inline-block text-green-600">|</span>
+            <LanguagePill />
+          </div>
         </div>
       </div>
-    </div>
+    </>
   );
 }
 
@@ -57,7 +67,7 @@ function LanguagePill() {
       <button
         onClick={() => setOpen((v) => !v)}
         aria-label="Change language"
-        className="inline-flex items-center gap-1 text-stone-300 hover:text-white transition-colors px-1.5 py-0.5 rounded"
+        className="inline-flex items-center gap-1 text-green-50 hover:text-white transition-colors px-1.5 py-0.5 rounded"
       >
         <Globe className="w-3 h-3" />
         <span>{current}</span>

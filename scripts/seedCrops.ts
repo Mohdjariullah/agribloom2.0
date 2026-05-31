@@ -107,19 +107,21 @@ async function main() {
   const dataPath = path.join(process.cwd(), "src/data/agrilens.json");
   const raw: RawCrop[] = JSON.parse(fs.readFileSync(dataPath, "utf8"));
 
-  const seenSlugs = new Map<string, number>();
+  const seenSlugs = new Set<string>();
   let upserts = 0;
   let updates = 0;
+  let skipped = 0;
 
   for (const r of raw) {
-    let slug = slugify(r.commonName);
-    const existing = seenSlugs.get(slug);
-    if (existing !== undefined) {
-      seenSlugs.set(slug, existing + 1);
-      slug = `${slug}-${existing + 1}`;
-    } else {
-      seenSlugs.set(slug, 0);
+    const slug = slugify(r.commonName);
+    // De-duplicate by name: the source JSON has ~48 repeated crops (e.g. two
+    // "Banana" rows). Keep the first, skip the rest so AgriLens shows a clean,
+    // unique list instead of the same crop twice.
+    if (seenSlugs.has(slug)) {
+      skipped += 1;
+      continue;
     }
+    seenSlugs.add(slug);
 
     const doc = {
       slug,
@@ -144,7 +146,9 @@ async function main() {
     else if (result.modifiedCount) updates += 1;
   }
 
-  console.log(`✅ Seeded ${raw.length} crops (${upserts} new, ${updates} updated)`);
+  console.log(
+    `✅ Seeded ${seenSlugs.size} unique crops (${upserts} new, ${updates} updated, ${skipped} duplicate names skipped)`
+  );
   await mongoose.disconnect();
 }
 

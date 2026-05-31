@@ -20,11 +20,14 @@ import {
   FileText,
   ClipboardList,
   TrendingUp,
+  TrendingDown,
+  Minus,
   ArrowUpRight,
   MessageCircle,
 } from "lucide-react";
 import { T } from "@/components/T";
 
+type TrendDir = "up" | "down" | "flat" | "new";
 type TrendPoint = {
   crop: string;
   percentage: number;
@@ -32,6 +35,9 @@ type TrendPoint = {
   averageArea: number;
   totalEntries: number;
   district?: string;
+  trend?: TrendDir;
+  changePct?: number;
+  mine?: boolean;
 };
 
 type Profile = {
@@ -51,6 +57,35 @@ const QUICK_LINKS = [
   { href: "/chat", title: "Assistant", desc: "Ask anything farming", icon: MessageCircle },
   { href: "/farmer/crop-entry", title: "Log a crop", desc: "Record what you sowed", icon: ClipboardList },
 ];
+
+function TrendBadge({ trend, changePct }: { trend?: TrendDir; changePct?: number }) {
+  if (trend === "up") {
+    return (
+      <span className="inline-flex items-center gap-1 text-xs font-semibold text-green-700 bg-green-50 px-2.5 py-1 rounded-full whitespace-nowrap">
+        <TrendingUp className="w-3.5 h-3.5" /> Rising{changePct ? ` ${changePct}%` : ""}
+      </span>
+    );
+  }
+  if (trend === "down") {
+    return (
+      <span className="inline-flex items-center gap-1 text-xs font-semibold text-red-700 bg-red-50 px-2.5 py-1 rounded-full whitespace-nowrap">
+        <TrendingDown className="w-3.5 h-3.5" /> Falling{changePct ? ` ${Math.abs(changePct)}%` : ""}
+      </span>
+    );
+  }
+  if (trend === "new") {
+    return (
+      <span className="inline-flex items-center gap-1 text-xs font-semibold text-blue-700 bg-blue-50 px-2.5 py-1 rounded-full whitespace-nowrap">
+        <TrendingUp className="w-3.5 h-3.5" /> New
+      </span>
+    );
+  }
+  return (
+    <span className="inline-flex items-center gap-1 text-xs font-medium text-stone-500 bg-stone-100 px-2.5 py-1 rounded-full whitespace-nowrap">
+      <Minus className="w-3.5 h-3.5" /> Steady
+    </span>
+  );
+}
 
 const TooltipBox = (props: {
   active?: boolean;
@@ -95,7 +130,18 @@ export default function FarmerDashboardPage() {
   }, []);
 
   const topCrop = trends[0]?.crop;
-  const districtLabel = trends[0]?.district || profile?.district;
+  // Prefer the profile's district spelling for the label so the heading stays
+  // consistent with the "Welcome back" strip above.
+  const districtLabel = profile?.district || trends[0]?.district;
+
+  // Crops the farmer has personally logged — used to personalize the
+  // "Your crops" card when they haven't set primary crops in their profile.
+  const myCrops = trends.filter((t) => t.mine).map((t) => t.crop);
+  const yourCropsValue = profile?.primaryCrops?.length
+    ? profile.primaryCrops.slice(0, 3).join(", ")
+    : myCrops.length
+      ? myCrops.slice(0, 3).join(", ")
+      : "Not set";
 
   return (
     <main className="min-h-screen bg-[#fafaf7] py-10 sm:py-14 px-4">
@@ -121,11 +167,7 @@ export default function FarmerDashboardPage() {
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-8">
           <SnapshotCard
             label="Your crops"
-            value={
-              profile?.primaryCrops?.length
-                ? profile.primaryCrops.slice(0, 3).join(", ")
-                : "Not set"
-            }
+            value={yourCropsValue}
             href="/profile"
             cta="Update"
           />
@@ -192,6 +234,38 @@ export default function FarmerDashboardPage() {
             </div>
           )}
         </div>
+
+        {/* Rising / falling in your area */}
+        {!loading && trends.length > 0 && (
+          <div className="bg-white border border-stone-200 rounded-2xl shadow-sm p-5 sm:p-6 mb-8">
+            <h2 className="text-sm uppercase tracking-[0.15em] text-stone-500 mb-1">
+              <T>Crops grown in your area</T>
+            </h2>
+            <p className="text-stone-600 text-sm mb-4">
+              <T>How much each crop is being sown lately, compared with before.</T>
+            </p>
+            <ul className="divide-y divide-stone-100">
+              {trends.slice(0, 8).map((c) => (
+                <li key={c.crop} className="flex items-center justify-between py-2.5">
+                  <div className="min-w-0">
+                    <p className="font-medium text-stone-900 capitalize truncate flex items-center gap-2">
+                      {c.crop}
+                      {c.mine && (
+                        <span className="inline-flex items-center text-[10px] font-semibold uppercase tracking-wide text-green-700 bg-green-50 border border-green-200 px-1.5 py-0.5 rounded">
+                          <T>Yours</T>
+                        </span>
+                      )}
+                    </p>
+                    <p className="text-xs text-stone-500">
+                      {c.totalArea.toFixed(1)} acres · {c.percentage.toFixed(0)}% of area
+                    </p>
+                  </div>
+                  <TrendBadge trend={c.trend} changePct={c.changePct} />
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
 
         {/* Quick links */}
         <div className="mb-4">

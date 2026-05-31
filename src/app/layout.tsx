@@ -3,9 +3,10 @@ import { Inter, Noto_Sans_Devanagari } from "next/font/google";
 import "./globals.css";
 
 import ConditionalNavbar from "./ConditionalNavbar";
+import SiteTopBar from "@/components/SiteTopBar";
 import { Toaster } from "react-hot-toast";
 import { LanguageProvider } from "@/contexts/LanguageContext";
-import ChatLauncher from "@/components/ChatLauncher";
+import { ChatWidget } from "@/components/ChatWidget";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -46,10 +47,12 @@ export default function RootLayout({
         }}
       >
         <LanguageProvider>
+          <SiteTopBar />
           <ConditionalNavbar />
           <div className="min-h-screen">{children}</div>
           <Toaster position="top-center" reverseOrder={false} />
-          <ChatLauncher />
+          {/* Single chat assistant for the whole site: the Chatbase embed. */}
+          <ChatWidget />
         </LanguageProvider>
       </body>
     </html>

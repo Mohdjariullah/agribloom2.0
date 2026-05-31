@@ -3,7 +3,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import axios from "axios";
-import { CropImage } from "@/components/CropImage";
+import { CropVisual } from "@/components/CropVisual";
 import { motion, AnimatePresence } from "framer-motion";
 import { Search } from "lucide-react";
 import { Input } from "@/components/ui/input";
@@ -161,15 +161,11 @@ export default function AgriLensPage() {
                 href={`/crops/${crop.slug}`}
                 className="group bg-white rounded-2xl border border-stone-200 hover:border-stone-300 hover:shadow-md overflow-hidden transition-all"
               >
-                <div className="relative h-40 bg-stone-50 overflow-hidden">
-                  <CropImage
-                    src={crop.imageUrl}
-                    alt={crop.name}
-                    fill
-                    sizes="(max-width: 768px) 100vw, 33vw"
-                    className="object-cover group-hover:scale-105 transition-transform duration-500"
-                  />
-                </div>
+                <CropVisual
+                  name={crop.name}
+                  category={crop.category}
+                  className="h-32 w-full group-hover:brightness-[1.03] transition-all"
+                />
                 <div className="p-4">
                   <div className="flex items-baseline justify-between gap-2 mb-1">
                     <h3 className="text-base font-semibold text-stone-900 truncate">

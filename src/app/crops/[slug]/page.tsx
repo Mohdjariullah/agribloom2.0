@@ -3,7 +3,7 @@ import { notFound } from "next/navigation";
 import { connectToDB } from "@/dbConfig/dbConfig";
 import Crop from "@/models/Crop";
 import type { ICrop } from "@/models/Crop";
-import { CropImage } from "@/components/CropImage";
+import { CropVisual } from "@/components/CropVisual";
 
 export const dynamic = "force-dynamic";
 
@@ -38,27 +38,22 @@ export default async function CropDetailPage({ params }: { params: Promise<{ slu
       </Link>
 
       <div className="bg-white rounded-3xl overflow-hidden shadow-xl border border-green-100">
-        <div className="relative h-72 md:h-96 bg-green-50 overflow-hidden">
-          <CropImage
-            src={crop.imageUrl}
-            alt={crop.name}
-            fill
-            sizes="100vw"
-            priority
-            className="object-cover"
+        <div className="relative">
+          <CropVisual
+            name={crop.name}
+            category={crop.category}
+            className="h-40 md:h-52 w-full"
           />
-          <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/10 to-transparent flex items-end p-8">
-            <div>
-              <span className="inline-block text-xs uppercase tracking-wider bg-white/90 text-green-700 px-3 py-1 rounded-full mb-3">
-                {crop.category.replace("_", " ")}
-              </span>
-              <h1 className="text-4xl md:text-5xl font-bold text-white">
-                🌿 {crop.name}
-              </h1>
-              {crop.scientificName && (
-                <p className="text-white/90 italic mt-1">{crop.scientificName}</p>
-              )}
-            </div>
+          <div className="px-6 sm:px-8 py-6 border-b border-green-50">
+            <span className="inline-block text-xs uppercase tracking-wider bg-green-50 text-green-700 px-3 py-1 rounded-full mb-3">
+              {crop.category.replace("_", " ")}
+            </span>
+            <h1 className="text-3xl md:text-4xl font-bold text-stone-900">
+              {crop.name}
+            </h1>
+            {crop.scientificName && (
+              <p className="text-stone-500 italic mt-1">{crop.scientificName}</p>
+            )}
           </div>
         </div>
 
